@@ -1,0 +1,16 @@
+# general ignore files
+*.class
+*.jar
+*.war
+
+# eclipse specific files and folders
+.project
+.classpath
+.loadpath
+.settings/
+bin/**
+tmp/**
+local.properties
+*.tmp
+*.bak
+*.swp
