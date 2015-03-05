@@ -1,6 +1,6 @@
-<project name="builder" basedir=".">
+<project name="projecto" basedir=".">
     <description>
-        simple example build file
+        ant script for the project
     </description>
   <!-- set global properties for this build -->
   <property name="src" location="src"/>

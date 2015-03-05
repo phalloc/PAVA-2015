@@ -1,6 +1,6 @@
 <project name="lab1" basedir=".">
     <description>
-        simple example build file
+        ant script for lab1
     </description>
   <!-- set global properties for this build -->
   <property name="src" location="src"/>
