@@ -1,4 +1,4 @@
-<project name="projecto" basedir=".">
+<project name="PAVA-Debugger" basedir=".">
     <description>
         ant script for the project
     </description>
@@ -27,7 +27,7 @@
 
  <target name="run" depends="compile"
         description="start the project" >
-    <java classname="Main" classpath="${build}" />
+    <java classname="DebuggerCLI.Main" classpath="${build}/DebuggerCLI" />
   </target>
 	 
 </project>
