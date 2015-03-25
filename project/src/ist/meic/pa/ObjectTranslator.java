@@ -29,9 +29,7 @@ public class ObjectTranslator implements Translator {
 		CtClass etype = ClassPool.getDefault().get("java.lang.Exception");
 		
 		for (CtMethod ctMethod : ctClass.getDeclaredMethods()) {
-			
 			ctMethod.addCatch(template, etype);
-
 		}
 	}
 
