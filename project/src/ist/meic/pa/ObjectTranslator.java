@@ -25,11 +25,18 @@ public class ObjectTranslator implements Translator {
 
 	void method(CtClass ctClass) throws NotFoundException,
 			CannotCompileException {
-		final String template = "{ist.meic.pa.Shell.runShell(); throw $e; }";
-		CtClass etype = ClassPool.getDefault().get("java.lang.Exception");
+		
+		//prevent instumentation of the Shell class
+		if(ctClass.getName().equals("ist.meic.pa.Shell"))
+			return;
+		
+		//old code that can be usefull for sintax
+		//final String template = "{ist.meic.pa.Shell.runShell(); throw $e; }";
+		//CtClass etype = ClassPool.getDefault().get("java.lang.Exception");
 		
 		for (CtMethod ctMethod : ctClass.getDeclaredMethods()) {
-			ctMethod.addCatch(template, etype);
+			System.out.println(ctMethod.getName());
+			
 		}
 	}
 
