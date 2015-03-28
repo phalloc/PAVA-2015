@@ -57,7 +57,8 @@ public class ObjectTranslator implements Translator {
 			CtMethod newMethod = CtNewMethod.copy(ctMethod, ctClass, null);
 			newMethod.setName("$" + methodName);
 //			newMethod.setModifiers(Modifier.PUBLIC);
-			newMethod.insertBefore("{System.out.println(\"ESTOU NA MAIN COPIADA BITCHES!! YEAH!!!\");}");
+			String print = "\"inside instrumented method: "+methodName+"\"";
+			newMethod.insertBefore("{System.out.println("+print+");}");
 			System.out.println("modifirers: "+newMethod.getModifiers());
 			ctClass.addMethod(newMethod);
 			// END add new method with $method_name and same body
