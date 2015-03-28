@@ -34,63 +34,52 @@ public class ObjectTranslator implements Translator {
 		// prevent instrumentation of our classes
 		final String className = ctClass.getName();
 		if (className.matches("(.*)ist.meic.pa(.*)")
-				|| className.matches("(.*)javassist(.*)")) {
+				|| className.matches("(.*)javassist(.*)")
+				|| className.matches("(.*)java(.*)")) {
 			System.out.println("ignored classes: " + className);
 			return;
 		}
 
-
 		for (CtMethod ctMethod : ctClass.getDeclaredMethods()) {
-			
+
 			String methodName = ctMethod.getName();
 			String temp = null;
-			if(Modifier.isStatic(ctMethod.getModifiers())){
-				temp = "{{ return ($r) ist.meic.pa.Shell.runShell(null,\""
-					+ className + "\",\"" + methodName + "\",$args, $sig);}}";
-			}
-			else temp = "{{ return ($r) ist.meic.pa.Shell.runShell($0,\""
-					+ className + "\",\"" + methodName + "\",$args, $sig);}}";
-			final String template = temp;
 
 			// START add new method with $method_name and same body
 			System.out.println("copying and changing name of: " + methodName);
 			CtMethod newMethod = CtNewMethod.copy(ctMethod, ctClass, null);
 			newMethod.setName("$" + methodName);
-//			newMethod.setModifiers(Modifier.PUBLIC);
-			String print = "\"inside instrumented method: "+methodName+"\"";
-			newMethod.insertBefore("{System.out.println("+print+");}");
-			System.out.println("modifirers: "+newMethod.getModifiers());
+
+			String print = "\"inside instrumented method: " + methodName + "\"";
+			newMethod.insertBefore("{System.out.println(" + print + ");}");
+			System.out.println("modifirers: " + newMethod.getModifiers());
 			ctClass.addMethod(newMethod);
 			// END add new method with $method_name and same body
 
 			// START change old method body to call Shell
 			System.out.println("changing body of: " + ctMethod.getLongName());
 
-			ctMethod.setBody(template);
+			// ctMethod.setBody(template);
 			// END change old method body to call Shell
-			
-//			newMethod.instrument(
-//				    new ExprEditor() {
-//				    	public void edit(NewExpr n) {
-//				    		
-//				    	}
-//				        public void edit(MethodCall m)
-//				                      throws CannotCompileException
-//				        {
-//				            if (m.getClassName().equals("Point")
-//				                          && m.getMethodName().equals("move"))
-//				                m.replace("{ $1 = 0; $_ = $proceed($$); }");
-//				        }
-//				    });
+
+			ctMethod.instrument(new ExprEditor() {
+				public void edit(MethodCall m) throws CannotCompileException {
+					if (!m.getClassName().matches("(.*)java(.*)")) {
+						try {
+							m.replace("{{ $_ = ($r) ist.meic.pa.Shell.runShell($0,\""
+									+ m.getMethod().getDeclaringClass()
+											.getName()
+									+ "\",\""
+									+ m.getMethodName() + "\",$args, $sig); }}");
+						} catch (NotFoundException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+				}
+			});
 
 		}
-		
 
 	}
-
 }
-
-// old code that can be usefull for sintax
-// final String template = "{ist.meic.pa.Shell.runShell(); throw $e; }";
-// CtClass etype = ClassPool.getDefault().get("java.lang.Exception");
-

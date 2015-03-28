@@ -19,7 +19,7 @@ public class DebuggerCLI {
 		try {
 			cl.run(args[0], restArgs);
 		} catch (Exception e) {
-				e.printStackTrace();
+				System.err.println(e.getCause());
 		}
 	}
 }
