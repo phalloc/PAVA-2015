@@ -45,26 +45,30 @@ public class ObjectTranslator implements Translator {
 			String methodName = ctMethod.getName();
 			String temp = null;
 
-			// START add new method with $method_name and same body
-			System.out.println("copying and changing name of: " + methodName);
-			CtMethod newMethod = CtNewMethod.copy(ctMethod, ctClass, null);
-			newMethod.setName("$" + methodName);
-
-			String print = "\"inside instrumented method: " + methodName + "\"";
-			newMethod.insertBefore("{System.out.println(" + print + ");}");
-			System.out.println("modifirers: " + newMethod.getModifiers());
-			ctClass.addMethod(newMethod);
-			// END add new method with $method_name and same body
-
-			// START change old method body to call Shell
-			System.out.println("changing body of: " + ctMethod.getLongName());
-
-			// ctMethod.setBody(template);
-			// END change old method body to call Shell
+			if(methodName.equals("main")){
+				ctMethod.insertBefore("ist.meic.pa.Shell.stackInit(\""+className+"\",\""+methodName+"\", $1);");
+			}
+			
+//			// START add new method with $method_name and same body
+//			System.out.println("copying and changing name of: " + methodName);
+//			CtMethod newMethod = CtNewMethod.copy(ctMethod, ctClass, null);
+//			newMethod.setName("$" + methodName);
+//
+//			String print = "\"inside instrumented method: " + methodName + "\"";
+//			newMethod.insertBefore("{System.out.println(" + print + ");}");
+//			System.out.println("modifirers: " + newMethod.getModifiers());
+//			ctClass.addMethod(newMethod);
+//			// END add new method with $method_name and same body
+//
+//			// START change old method body to call Shell
+//			System.out.println("changing body of: " + ctMethod.getLongName());
+//
+//			// ctMethod.setBody(template);
+//			// END change old method body to call Shell
 
 			ctMethod.instrument(new ExprEditor() {
 				public void edit(MethodCall m) throws CannotCompileException {
-					if (!m.getClassName().matches("(.*)java(.*)")) {
+					if (!m.getClassName().matches("(.*)java(.*)|(.*)ist.meic.pa(.*)")) {
 						try {
 							m.replace("{{ $_ = ($r) ist.meic.pa.Shell.runShell($0,\""
 									+ m.getMethod().getDeclaringClass()
@@ -72,7 +76,6 @@ public class ObjectTranslator implements Translator {
 									+ "\",\""
 									+ m.getMethodName() + "\",$args, $sig); }}");
 						} catch (NotFoundException e) {
-							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
 					}

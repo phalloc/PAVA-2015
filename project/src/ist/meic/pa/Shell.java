@@ -4,17 +4,28 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 public class Shell {
-	private static Map<String, Object[]> mapargs = new HashMap<String, Object[]>();
+	
+	private static Map<Integer, String> mapid = new TreeMap<Integer, String>();
+	private static Map<String, Object[]> mapargs = new TreeMap<String, Object[]>();
 
+	public static void stackInit(String className, String methodName, Object[] args){
+
+		mapid.put(1, className+"."+methodName);
+		mapargs.put(className+"."+methodName, args);
+	}
+	
 	public static final Object runShell(Object passedObj, String className,
 			String methodName, Object[] args, Class<?>[] argsType)
 			throws Throwable {
 		
+				
+		mapid.put(mapid.size()+1, className+"."+methodName); 
 		mapargs.put(className+"."+methodName, args);
+		
 		Object obj = null;
 		Class<?> cls = null;
 		Method method = null;
@@ -34,7 +45,7 @@ public class Shell {
 
 		} catch (Exception e) {
 			System.err.println(e.getCause());
-			StackTraceElement[] ste = e.getStackTrace();
+
 			while (true) {
 				System.err.print("DebuggerCLI:> ");
 
@@ -53,21 +64,18 @@ public class Shell {
 						result += "\tFields: " + f.getName();
 					}
 
+					
 					result += "\nCalled Stack: \n";
-					result += className + "." + methodName + "(";
-					for (Object o : args) {
-						result += o;
-						result += ")\n";
-					}
-					for(String ks : mapargs.keySet()){
-
-						result += ks + "(";
-						for(Object o : mapargs.get(ks)){
-							result += o + ",";
+			
+			        for(Integer i=mapid.size(); i>0;i--){
+			        	result += mapid.get(i) + "(";
+			        	for(Object o : mapargs.get(mapid.get(i))){
+							result += o + ", ";
 						}
-						result += ")\n";
-						result = result.replace(",)", ")");
-					}
+			        	result += ")\n";
+			        	result = result.replace(", )", ")");
+			        }
+			       
 					System.out.println(result);
 				} else if (inputArgs[0].equals("Get")) {
 					Field f = cls.getDeclaredField(inputArgs[1]);
@@ -96,6 +104,9 @@ public class Shell {
 							String.class);
 					f.set(obj, fieldmeth.invoke(cfield, inputArgs[2]));
 				} else if (inputArgs[0].equals("Return")) {
+					
+					mapargs.remove(mapid.get(mapid.size()));
+					mapid.remove(mapid.size());
 
 					Class<?> returnType = method.getReturnType();
 
@@ -119,6 +130,8 @@ public class Shell {
 				} else if (inputArgs[0].equals("Retry")) {
 					return method.invoke(obj, args);
 				} else if (inputArgs[0].equals("Throw")) {
+					mapargs.remove(mapid.get(mapid.size()));
+					mapid.remove(mapid.size());
 					throw e.getCause();
 
 				}
