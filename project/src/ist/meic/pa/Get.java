@@ -1,12 +1,17 @@
 package ist.meic.pa;
 
-public class Get implements Command {
+import java.lang.reflect.Field;
+
+public class Get extends Command {
 
 	
 	@Override
-	public void execute() {
-		// TODO Auto-generated method stub
-
+	public void execute() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+		Field f = cls.getDeclaredField(inputArgs[1]);
+		
+		f.setAccessible(true);
+		System.out.println(f.get(passedObj));
+		
 	}
 
 }

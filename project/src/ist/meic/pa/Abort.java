@@ -1,10 +1,11 @@
 package ist.meic.pa;
 
-public class Abort implements Command {
+public class Abort extends Command {
+
 	
 	@Override
 	public void execute() {
-		return;
+		System.exit(-1);
 	}
 
 }
