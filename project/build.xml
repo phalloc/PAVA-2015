@@ -1,4 +1,4 @@
-<project name="Pava Debugger" default="run" basedir=".">
+<project name="Pava Debugger" default="jar" basedir=".">
 
 	<description>
 		Group7 Build File
@@ -22,7 +22,7 @@
 	</target>
 
 	<target name="compile" depends="init" description="compile the source ">
-		<javac srcdir="${src}" destdir="${build}">
+		<javac includeantruntime="false" srcdir="${src}" destdir="${build}">
 			<classpath>
 				<path refid="javassist.path" />
 			</classpath>
@@ -30,15 +30,21 @@
 	</target>
 
 	<target name="jar" depends="compile" description="generate jar">
-        <jar destfile="debugger.jar" basedir="build/ist/meic/pa">
+        <jar destfile="debugger.jar" basedir="build">
             <manifest>
                 <attribute name="Main-Class" value="ist.meic.pa.DebuggerCLI"/>
+            	<attribute name="Class-Path" value="javassist.jar" />
             </manifest>
         </jar>
 	</target>
 	
-	<target name="run" depends="compile" description="running">
-		<java jar="./debugger.jar" fork="true"/>
+	<target name="run" depends="jar" description="running">
+		<java classname="ist.meic.pa.DebuggerCLI" fork="true">
+			<classpath>
+				<path refid="javassist.path" />
+				<path location="./debugger.jar" />
+			</classpath>
+		</java>
 	</target>
 
 </project>
