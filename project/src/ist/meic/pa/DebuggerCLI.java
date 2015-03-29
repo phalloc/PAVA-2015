@@ -12,7 +12,7 @@ public class DebuggerCLI {
 
 		Translator translator = new ObjectTranslator();
 		ClassPool cp = ClassPool.getDefault();
-
+		
 		Loader cl = new Loader(cp);
 		cl.addTranslator(cp, translator);
 
