@@ -1,33 +1,44 @@
-<project name="PAVA-Debugger" basedir=".">
-    <description>
-        ant script for the project
-    </description>
-  <!-- set global properties for this build -->
-  <property name="src" location="src"/>
-  <property name="build" location="build"/>
+<project name="Pava Debugger" default="run" basedir=".">
 
-  <target name="init">
-    <!-- Create the time stamp -->
-    <tstamp/>
-    <!-- Create the build directory structure used by compile -->
-    <mkdir dir="${build}"/>
-  </target>
+	<description>
+		Group7 Build File
+	</description>
 
-  <target name="compile" depends="init"
-        description="compile the source " >
-    <!-- Compile the java code from ${src} into ${build} -->
-    <javac srcdir="${src}" destdir="${build}"/>
-  </target>
+	<property name="src" location="src" />
+	<property name="build" location="build" />
 
-  <target name="clean"
-        description="clean up" >
-    <!-- Delete the ${build} and ${dist} directory trees -->
-    <delete dir="${build}"/>
-  </target>
+	<path id="javassist.path">
+		<pathelement location="./javassist.jar" />
+	</path>
 
- <target name="run" depends="compile"
-        description="start the project" >
-    <java classname="DebuggerCLI.Main" classpath="${build}/DebuggerCLI" />
-  </target>
-	 
+	<target name="clean" description="clean up">
+		<delete dir="${build}" />
+		<delete file="debugger.jar" />
+	</target>
+	
+	<target name="init" depends="clean">
+		<tstamp />
+		<mkdir dir="${build}" />
+	</target>
+
+	<target name="compile" depends="init" description="compile the source ">
+		<javac srcdir="${src}" destdir="${build}">
+			<classpath>
+				<path refid="javassist.path" />
+			</classpath>
+		</javac>
+	</target>
+
+	<target name="jar" depends="compile" description="generate jar">
+        <jar destfile="debugger.jar" basedir="build/ist/meic/pa">
+            <manifest>
+                <attribute name="Main-Class" value="ist.meic.pa.DebuggerCLI"/>
+            </manifest>
+        </jar>
+	</target>
+	
+	<target name="run" depends="compile" description="running">
+		<java jar="./debugger.jar" fork="true"/>
+	</target>
+
 </project>

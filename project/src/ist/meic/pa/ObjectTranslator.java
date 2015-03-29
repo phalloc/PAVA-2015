@@ -33,7 +33,6 @@ public class ObjectTranslator implements Translator {
 		if (className.matches("(.*)ist.meic.pa(.*)")
 				|| className.matches("(.*)javassist(.*)")
 				|| className.matches("(.*)java(.*)")) {
-			System.out.println("ignored classes: " + className);
 			return;
 		}
 
@@ -45,23 +44,6 @@ public class ObjectTranslator implements Translator {
 			if(methodName.equals("main")){
 				ctMethod.insertBefore("ist.meic.pa.Shell.stackInit(\""+className+"\",\""+methodName+"\", $1);");
 			}
-			
-//			// START add new method with $method_name and same body
-//			System.out.println("copying and changing name of: " + methodName);
-//			CtMethod newMethod = CtNewMethod.copy(ctMethod, ctClass, null);
-//			newMethod.setName("$" + methodName);
-//
-//			String print = "\"inside instrumented method: " + methodName + "\"";
-//			newMethod.insertBefore("{System.out.println(" + print + ");}");
-//			System.out.println("modifirers: " + newMethod.getModifiers());
-//			ctClass.addMethod(newMethod);
-//			// END add new method with $method_name and same body
-//
-//			// START change old method body to call Shell
-//			System.out.println("changing body of: " + ctMethod.getLongName());
-//
-//			// ctMethod.setBody(template);
-//			// END change old method body to call Shell
 
 			ctMethod.instrument(new ExprEditor() {
 				public void edit(MethodCall m) throws CannotCompileException {

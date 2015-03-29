@@ -6,15 +6,11 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 
 import javassist.Modifier;
 
 public class Shell {
 
-	private static Map<Integer, String> mapid = new TreeMap<Integer, String>();
-	private static Map<String, Object[]> mapargs = new TreeMap<String, Object[]>();
 	private static List<String> stackTrace = new ArrayList<String>();
 
 	public static void stackInit(String className, String methodName,
@@ -46,7 +42,6 @@ public class Shell {
 			cls = Class.forName(className);
 			method = cls.getDeclaredMethod("" + methodName, argsType);
 			method.setAccessible(true);
-			System.out.println("INCLASS: " + className + methodName);
 
 			Object res = null;
 
@@ -60,9 +55,6 @@ public class Shell {
 				res = method.invoke(obj, args);
 			}
 
-			System.out.println("invoking: " + className + "$" + methodName
-					+ " with object: " + obj);
-
 			stackTrace.remove(stackTrace.size()-1);
 			return res;
 
@@ -70,8 +62,7 @@ public class Shell {
 			stackTrace.remove(stackTrace.size()-1);
 			throw npe.getCause();
 		} catch (Exception e) {
-			e.printStackTrace();
-			// System.err.println(e.getCause());
+			System.err.println(e.getCause());
 
 			while (true) {
 				System.err.print("DebuggerCLI:> ");
