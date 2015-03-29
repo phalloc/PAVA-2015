@@ -4,13 +4,10 @@ import javassist.CannotCompileException;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.CtMethod;
-import javassist.CtNewMethod;
-import javassist.Modifier;
 import javassist.NotFoundException;
 import javassist.Translator;
 import javassist.expr.ExprEditor;
 import javassist.expr.MethodCall;
-import javassist.expr.NewExpr;
 
 public class ObjectTranslator implements Translator {
 
@@ -43,7 +40,7 @@ public class ObjectTranslator implements Translator {
 		for (CtMethod ctMethod : ctClass.getDeclaredMethods()) {
 
 			String methodName = ctMethod.getName();
-			String temp = null;
+
 
 			if(methodName.equals("main")){
 				ctMethod.insertBefore("ist.meic.pa.Shell.stackInit(\""+className+"\",\""+methodName+"\", $1);");
@@ -68,9 +65,9 @@ public class ObjectTranslator implements Translator {
 
 			ctMethod.instrument(new ExprEditor() {
 				public void edit(MethodCall m) throws CannotCompileException {
-					if (!m.getClassName().matches("(.*)java(.*)|(.*)ist.meic.pa(.*)")) {
+					if (!m.getClassName().matches("(.*)ist.meic.pa(.*)")) {
 						try {
-							m.replace("{{ $_ = ($r) ist.meic.pa.Shell.runShell($0,\""
+							m.replace("{{ $_ = ($r) ($w) ist.meic.pa.Shell.runShell($0,\""
 									+ m.getMethod().getDeclaringClass()
 											.getName()
 									+ "\",\""

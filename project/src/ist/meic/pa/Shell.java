@@ -7,6 +7,8 @@ import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.TreeMap;
 
+import javassist.Modifier;
+
 public class Shell {
 	
 	private static Map<Integer, String> mapid = new TreeMap<Integer, String>();
@@ -22,29 +24,48 @@ public class Shell {
 			String methodName, Object[] args, Class<?>[] argsType)
 			throws Throwable {
 		
-				
-		mapid.put(mapid.size()+1, className+"."+methodName); 
-		mapargs.put(className+"."+methodName, args);
-		
+						
 		Object obj = null;
 		Class<?> cls = null;
 		Method method = null;
 
+		mapid.put(mapid.size()+1, className+"."+methodName); 
+		mapargs.put(className+"."+methodName, args);
+		
 		try {
-			System.out.println("INCLASS: " + className + methodName);
 			cls = Class.forName(className);
-			if (passedObj == null) {
-				obj = cls.newInstance();
-			} else
-				obj = passedObj;
-
 			method = cls.getDeclaredMethod("" + methodName, argsType);
-			System.out.println("invoking: " + className + "$" + methodName);
 			method.setAccessible(true);
-			return method.invoke(obj, args);
+			System.out.println("INCLASS: " + className + methodName);
+			
+			Object res = null;
+			
+			if (passedObj == null && Modifier.isStatic(method.getModifiers())){
+				obj = cls;
+				res = method.invoke(cls, args);
+			}else if(passedObj == null){
+				throw new NullPointerException();
+			}else{
+				obj = passedObj;
+				res = method.invoke(obj, args);
+			}
+			
+			System.out.println("invoking: " + className + "$" + methodName + " with object: "+obj);
+			
+			
+			mapargs.remove(mapid.get(mapid.size()));
+			mapid.remove(mapid.size());
+			return res;
 
-		} catch (Exception e) {
+		} catch(NullPointerException npe){
+			mapargs.remove(mapid.get(mapid.size()));
+			mapid.remove(mapid.size());
+			throw npe.getCause();
+		} catch(Exception e) {
+			//e.printStackTrace();
 			System.err.println(e.getCause());
+			
+			
 
 			while (true) {
 				System.err.print("DebuggerCLI:> ");
@@ -55,13 +76,16 @@ public class Shell {
 				String input = reader.readLine();
 				String[] inputArgs = input.split(" ");
 
+				//////////////// COMANDS ////////////////
 				if (inputArgs[0].equals("Abort")) {
 					System.exit(-1);
 				} else if (inputArgs[0].equals("Info")) {
 					String result = "Called object: " + obj + "\n";
 
+					result += "\tFields: ";
+					
 					for (Field f : cls.getDeclaredFields()) {
-						result += "\tFields: " + f.getName();
+						result += f.getName();
 					}
 
 					
@@ -104,10 +128,8 @@ public class Shell {
 							String.class);
 					f.set(obj, fieldmeth.invoke(cfield, inputArgs[2]));
 				} else if (inputArgs[0].equals("Return")) {
-					
 					mapargs.remove(mapid.get(mapid.size()));
 					mapid.remove(mapid.size());
-
 					Class<?> returnType = method.getReturnType();
 
 					String fieldName = returnType.getName();
@@ -120,8 +142,11 @@ public class Shell {
 					} else if (fieldName.equals("double")) {
 						op = "Double";
 						cl = op;
+					} else if (fieldName.equals("String")){
+						return inputArgs[1];
 					}
 
+					
 					Class<?> cfield = Class.forName("java.lang." + cl);
 					Method fieldmeth = cfield.getDeclaredMethod("parse" + op,
 							String.class);
@@ -139,5 +164,6 @@ public class Shell {
 			}
 
 		}
+		
 	}
 }
