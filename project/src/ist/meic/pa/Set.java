@@ -18,7 +18,6 @@ public class Set extends Command {
 		String fieldName = fieldType.getName();
 		fieldName = fieldName.replace("java.lang.", "");
 		fieldName = fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
-		System.out.println(fieldName);
 		Method parseMeth;
 
 		
