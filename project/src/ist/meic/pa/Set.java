@@ -18,10 +18,11 @@ public class Set extends Command {
 		String fieldName = fieldType.getName();
 		fieldName = fieldName.replace("java.lang.", "");
 		fieldName = fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
+		System.out.println(fieldName);
 		Method parseMeth;
 
 		
-		if (fieldName.equals("int") || fieldName.equals("Integer")) {
+		if (fieldName.equals("Int") || fieldName.equals("Integer")) {
 			fieldType = Class.forName("java.lang.Integer");
 			parseMeth = fieldType.getDeclaredMethod("parseInt", String.class);
 
