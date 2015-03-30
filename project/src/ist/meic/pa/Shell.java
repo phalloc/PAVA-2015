@@ -12,15 +12,14 @@ public class Shell {
 
 	public static List<String> stackTrace = new ArrayList<String>();
 
-	public static void stackInit(String className, String methodName,
-			Object[] args) {
+	public static void stackInit(String className, String methodName, Object[] args) {
 
 		String res = className + "." + methodName + "(";
 		for (Object o : args) {
-			res += o + ", ";
+			res += o + ",";
 		}
 		res += ")";
-		res = res.replace(", )", ")");
+		res = res.replace(",)", ")");
 
 		stackTrace.add(res);
 
@@ -43,6 +42,8 @@ public class Shell {
 
 			Object res = null;
 
+			//parse method and object to understand if the class is or not static
+			//in order to invoke with or without an instance
 			if (passedObj == null && Modifier.isStatic(method.getModifiers())) {
 				obj = cls;
 				res = method.invoke(cls, args);
@@ -71,11 +72,15 @@ public class Shell {
 				String input = reader.readLine();
 				String[] inputArgs = input.split(" ");
 
-				// ////////////// COMMANDS ////////////////
-
+				
+				//command invocation
+				
+				//fixed invocation in the case of throw
 				if (inputArgs[0].equals("Throw")) {
 					stackTrace.remove(stackTrace.size() - 1);
 					throw e.getCause();
+					
+				//dynamic invocation with the use of the command pattern
 				} else {
 					Class<?> command = Class.forName("ist.meic.pa."
 							+ inputArgs[0]);
@@ -105,6 +110,7 @@ public class Shell {
 		}
 	}
 
+	//adds the method calls to the callStack
 	public static void addStack(String className, String methodName,
 			Object[] args) {
 		String res = className + "." + methodName + "(";
