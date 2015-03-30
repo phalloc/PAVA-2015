@@ -15,7 +15,7 @@ public class ObjectTranslator implements Translator {
 	public void onLoad(ClassPool pool, String className)
 			throws NotFoundException, CannotCompileException {
 		CtClass ctClass = pool.get(className);
-		method(ctClass);
+		instrument(ctClass);
 	}
 
 	@Override
@@ -25,7 +25,7 @@ public class ObjectTranslator implements Translator {
 
 	}
 
-	void method(CtClass ctClass) throws NotFoundException,
+	void instrument(CtClass ctClass) throws NotFoundException,
 			CannotCompileException {
 
 		// prevent instrumentation of our classes
