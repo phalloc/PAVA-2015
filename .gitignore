@@ -14,5 +14,7 @@ local.properties
 *.tmp
 *.bak
 *.swp
+*.fas
+*.lib
 /build/
 /bin/
