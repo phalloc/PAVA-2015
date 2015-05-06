@@ -21,18 +21,16 @@ public class ObjectTranslator implements Translator {
 	@Override
 	public void start(ClassPool arg0) throws NotFoundException,
 			CannotCompileException {
-		// TODO Auto-generated method stub
-
 	}
 
 	void instrument(CtClass ctClass) throws NotFoundException,
 			CannotCompileException {
 
-		// prevent instrumentation of our classes
+		// prevent instrumentation of the debugger classes
 		final String className = ctClass.getName();
 		if (className.matches("(.*)ist.meic.pa(.*)")
-				|| className.matches("(.*)javassist(.*)")
-				|| className.matches("(.*)java(.*)")) {
+			|| className.matches("(.*)javassist(.*)")
+			|| className.matches("(.*)java(.*)")) {
 			return;
 		}
 
@@ -40,11 +38,12 @@ public class ObjectTranslator implements Translator {
 
 			String methodName = ctMethod.getName();
 
-
+			//since main is not invoked, this method adds the function and its arguments to the stack
 			if(methodName.equals("main")){
 				ctMethod.insertBefore("ist.meic.pa.Shell.stackInit(\""+className+"\",\""+methodName+"\", $1);");
 			}
 
+			//replace method calls with calls to our debugger (providing the method name and its arguments)
 			ctMethod.instrument(new ExprEditor() {
 				public void edit(MethodCall m) throws CannotCompileException {
 					if (!m.getClassName().matches("(.*)ist.meic.pa(.*)")) {
