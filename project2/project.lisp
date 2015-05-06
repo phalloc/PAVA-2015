@@ -527,3 +527,37 @@
 	result)
       (print "Error: Tensors have different sizes")))
 
+; Drop (drop)
+
+
+
+; Reshape (reshape)
+
+; Catenate (catenate)
+
+(defgeneric catenate (tensor1 tensor2))
+
+(defmethod catenate ((tensor1 number) (tensor2 number))
+  (vector tensor1 tensor2))
+
+(defmethod catenate ((tensor1 vector) (tensor2 vector))
+  (let ((result (make-array (+ (length tensor1) (length tensor2)) :fill-pointer 0))) 
+    (loop for index from 0 to (- (length tensor1) 1)
+	 do (vector-push (aref tensor1 index) result))
+    (loop for index from 0 to (- (length tensor2) 1)
+	 do (vector-push (aref tensor2 index) result))
+    result))
+
+; Member (member)
+
+(defgeneric member? (tensor1 tensor2))
+
+(defmethod member? ((tensor1 vector) (tensor2 number))
+  (let ((result (make-array (length tensor1))))
+    (loop for index from 0 to (- (length tensor1) 1)
+       if (eql (aref tensor1 index) tensor2)
+       do (setf (aref result index) 1)
+	 else 
+	 do (setf (aref result index) 0))
+    result))
+
