@@ -1,21 +1,33 @@
+(defclass tensor()
+  ((value :accessor tensor-value :initarg :value)))
 
-(defgeneric display-tensor (tensor) )
+(defclass scalar(tensor)
+  ((value :accessor scalar-value :initarg :value)))
+  
+(defclass vec(tensor)
+  ((value :accessor vec-value :initarg :value)))
+ 
+ 
+(defmethod print-object ((tens tensor) stream)
+  (print-object (tensor-value tens) stream))
+ 
+(defmethod print-object ((v array) stream)
+  (loop for x from 0 below (array-dimension v 0) do
+    (format stream "~A " (aref v x)))
+    (format stream "~%"))
+    
 
-;to correct
-(defmethod display-tensor ((tensor vector))
-	(loop for index from 0 to (- (length tensor) 1)
-		do (format t "~A " (aref tensor index))))
-
-
+		
 ;SCALARS AND VECTORS
 (defun s (x)
-	x)
+	(make-instance 'scalar :value x))
 
-(defun v (&rest args)
-	(let ((vec (make-array (length args) :initial-contents args :adjustable t)))
-	  (display-tensor vec)
-	  vec))
-		
+(defun v (&rest values)
+  (let ((result (make-instance 'vec :value (make-array (list-length values)))))
+    (loop for index from 0 below (list-length values)
+       do (setf (aref (vec-value result) index) (s (nth index values))))
+    result))
+ 
 
 		
 ;MONADIC FUNCTIONS
@@ -24,27 +36,23 @@
 ; Symmetric (.-)
 (defgeneric .- (tensor) )
 
-(defmethod .- ((tensor number))
-  (* -1 tensor))
+  
+(defmethod .- ((tensor scalar))
+  (s (* -1 (scalar-value tensor))))
 
-(defmethod .- ((tensor vector))
-  (let ((result (make-array (length tensor))))
-    (loop for index from 0 to (- (length tensor) 1)
-       do (setf (aref result index) (.- (aref tensor index))))
-    result))
+
+(defmethod .- ((tensor vec))
+  (execute-operation (vec-value tensor) #'.-))
     
 ; Inverse (./)
 
 (defgeneric ./ (tensor) )
 
-(defmethod ./ ((tensor number))
-  (/ 1 tensor))
+(defmethod ./ ((tensor scalar))
+  (s (/ 1 (scalar-value tensor))))
 
-(defmethod ./ ((tensor vector))
-  (let ((result (make-array (length tensor))))
-    (loop for index from 0 to (- (length tensor) 1)
-       do (setf (aref result index) (./ (aref tensor index))))
-    result))
+(defmethod ./ ((tensor vec))
+  (execute-operation (vec-value tensor) #'./))
 		
 ; Factorial (.!)
 
@@ -55,55 +63,43 @@
 
 (defgeneric .! (tensor) )
 
-(defmethod .! ((tensor number))
-  (fact tensor))
+(defmethod .! ((tensor scalar))
+  (s (fact (scalar-value tensor))))
 
-(defmethod .! ((tensor vector))
-  (let ((result (make-array (length tensor))))
-    (loop for index from 0 to (- (length tensor) 1)
-       do (setf (aref result index) (.! (aref tensor index))))
-    result))
+(defmethod .! ((tensor vec))
+  (execute-operation (vec-value tensor) #'.!))
 
 ; sin (.sin)
 
-(defgeneric .sin (tensor))
+(defgeneric .sin (tensor) )
 
-(defmethod .sin ((tensor number))
-  (sin tensor))
+(defmethod .sin ((tensor scalar))
+  (s (sin (scalar-value tensor))))
 
-(defmethod .sin ((tensor vector))
-  (let ((result (make-array (length tensor))))
-    (loop for index from 0 to (- (length tensor) 1)
-       do (setf (aref result index) (.sin (aref tensor index))))
-    result))
+(defmethod .sin ((tensor vec))
+  (execute-operation (vec-value tensor) #'.sin))
 
 ; cos (.cos)
 
-(defgeneric .cos (tensor))
+(defgeneric .cos (tensor) )
 
-(defmethod .cos ((tensor number))
-  (cos tensor))
+(defmethod .cos ((tensor scalar))
+  (s (cos (scalar-value tensor))))
 
-(defmethod .cos ((tensor vector))
-  (let ((result (make-array (length tensor))))
-    (loop for index from 0 to (- (length tensor) 1)
-       do (setf (aref result index) (.cos (aref tensor index))))
-    result))
+(defmethod .cos ((tensor vec))
+  (execute-operation (vec-value tensor) #'.cos))
 
 ; not (.not)
 
 (defgeneric .not (tensor) )
 
-(defmethod .not ((tensor number))
-  (if (eql tensor 0)
+(defmethod .not ((tensor scalar))
+  (if (eql (scalar-value tensor) 0)
       1
       0))
 
-(defmethod .not ((tensor vector))
-  (let ((result (make-array (length tensor))))
-    (loop for index from 0 to (- (length tensor) 1)
-       do (setf (aref result index) (.not (aref tensor index))))
-    result))
+(defmethod .not ((tensor vec))
+  (execute-operation (vec-value tensor) #'.not))
 
 ; Reshape
 
@@ -112,20 +108,19 @@
 
 (defgeneric shape (tensor))
 
-(defmethod shape ((tensor number))
+(defmethod shape ((tensor scalar))
   0)
 
-(defmethod shape ((tensor vector))
-  (length tensor))
+(defmethod shape ((tensor vec))
+  (length (vec-value tensor)))
 
 ; Interval
 
 (defun interval (n)
-  (let ((result (make-array n)))
-    (loop for index from 0 to (- n 1)
-	 do (setf (aref result index)
-		  (+ index 1)))
-    result))
+  (let ((lst nil))
+    (loop for index from 0 below n
+       do (setf lst (cons (+ index 1) lst)))
+    (make-instance 'vec :value (make-array (list-length lst) :initial-contents (reverse lst)))))
 
 ; DYADIC FUNCTIONS
 
@@ -561,3 +556,12 @@
 	 do (setf (aref result index) 0))
     result))
 
+
+    
+;;;;;;;;;;;;;; AUX ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun execute-operation (vec fun)
+  (let ((lst nil))
+    (loop for index from 0 below (array-dimension vec 0)
+       do (setf lst (cons (funcall fun (aref vec index)) lst)))
+    (make-instance 'vec :value (make-array (list-length lst) :initial-contents (reverse lst)))))
