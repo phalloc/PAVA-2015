@@ -40,14 +40,14 @@
 (defmethod .- ((tensor scalar) &rest tensors)
   (cond ((null tensors) (s (* -1 (scalar-value tensor))))
         ((eql (type-of (first tensors)) 'SCALAR) (s (- (scalar-value tensor) (scalar-value (first tensors)))))
-        ((eql (type-of (first tensors)) 'VEC) (execute-dyadic-fun2 (vec-value (first tensors)) tensor #'.-))
-    )
+        ((eql (type-of (first tensors)) 'VEC) (execute-dyadic-fun2 tensor (vec-value (first tensors)) #'.-))
+   )
   )
 
 
 (defmethod .- ((tensor vec) &rest tensors)
   (cond ((null tensors) (execute-monadic-fun (vec-value tensor) #'.-))
-        ((eql (type-of (first tensors)) 'SCALAR) (s (- (scalar-value (first tensors)) (scalar-value tensor))))
+        ((eql (type-of (first tensors)) 'SCALAR) (execute-dyadic-fun3 (vec-value tensor) (first tensors) #'.-))
         ((and (eql (type-of (first tensors)) 'VEC)
               (eql (shape tensor) (shape (first tensors))))
           (execute-dyadic-fun (vec-value tensor) (vec-value (first tensors)) #'.-))
@@ -144,11 +144,11 @@
   (s (+ (scalar-value tensor1) (scalar-value tensor2))))
 
 (defmethod .+ ((tensor1 scalar) (tensor2 vec))
-  (execute-dyadic-fun2 (vec-value tensor2) tensor1 #'.+))
+  (execute-dyadic-fun2 tensor1 (vec-value tensor2) #'.+))
 
 
 (defmethod .+ ((tensor1 vec) (tensor2 scalar))
-  (execute-dyadic-fun2 (vec-value tensor1) tensor2 #'.+))
+  (execute-dyadic-fun3 (vec-value tensor1) tensor2 #'.+))
 
 (defmethod .+ ((tensor1 vec) (tensor2 vec))
   (if (eql (shape tensor1) 
@@ -165,10 +165,10 @@
   (s (* (scalar-value tensor1) (scalar-value tensor2))))
 
 (defmethod .* ((tensor1 scalar) (tensor2 vec))
-  (execute-dyadic-fun2 (vec-value tensor2) tensor1 #'.*))
+  (execute-dyadic-fun2 tensor1 (vec-value tensor2) #'.*))
 
 (defmethod .* ((tensor1 vec) (tensor2 scalar))
-  (execute-dyadic-fun2 (vec-value tensor1) tensor2 #'.*))
+  (execute-dyadic-fun3 (vec-value tensor1) tensor2 #'.*))
 
 (defmethod .* ((tensor1 vec) (tensor2 vec))
   (if (eql (shape tensor1) 
@@ -190,10 +190,10 @@
   (s result)))
 
 (defmethod .// ((tensor1 scalar) (tensor2 vec))
-  (execute-dyadic-fun2 (vec-value tensor2) tensor1 #'.//))
+  (execute-dyadic-fun2 tensor1 (vec-value tensor2) #'.//))
 
 (defmethod .// ((tensor1 vec) (tensor2 scalar))
-  (execute-dyadic-fun2 (vec-value tensor1) tensor2 #'.//))
+  (execute-dyadic-fun3 (vec-value tensor1) tensor2 #'.//))
 
 (defmethod .// ((tensor1 vec) (tensor2 vec))
   (if (eql (shape tensor1) 
@@ -209,10 +209,10 @@
   (s (mod (scalar-value tensor1) (scalar-value tensor2))))
 
 (defmethod .% ((tensor1 scalar) (tensor2 vec))
-  (execute-dyadic-fun2 (vec-value tensor2) tensor1 #'.%))
+  (execute-dyadic-fun2 tensor1 (vec-value tensor2) #'.%))
 
 (defmethod .% ((tensor1 vec) (tensor2 scalar))
-  (execute-dyadic-fun2 (vec-value tensor1) tensor2 #'.%))
+  (execute-dyadic-fun3 (vec-value tensor1) tensor2 #'.%))
 
 (defmethod .% ((tensor1 vec) (tensor2 vec))
   (if (eql (shape tensor1) 
@@ -230,10 +230,10 @@
       0))
 
 (defmethod .< ((tensor1 scalar) (tensor2 vec))
-  (execute-dyadic-fun2 (vec-value tensor2) tensor1 #'.<))
+  (execute-dyadic-fun2 tensor1 (vec-value tensor2) #'.<))
 
 (defmethod .< ((tensor1 vec) (tensor2 scalar))
-  (execute-dyadic-fun2 (vec-value tensor1) tensor2 #'.<))
+  (execute-dyadic-fun3 (vec-value tensor1) tensor2 #'.<))
 
 (defmethod .< ((tensor1 vec) (tensor2 vec))
   (if (eql (shape tensor1) 
@@ -251,10 +251,10 @@
       0))
 
 (defmethod .> ((tensor1 scalar) (tensor2 vec))
-  (execute-dyadic-fun2 (vec-value tensor2) tensor1 #'.>))
+  (execute-dyadic-fun2 tensor1 (vec-value tensor2) #'.>))
 
 (defmethod .> ((tensor1 vec) (tensor2 scalar))
-  (execute-dyadic-fun2 (vec-value tensor1) tensor2 #'.>))
+  (execute-dyadic-fun3 (vec-value tensor1) tensor2 #'.>))
 
 (defmethod .> ((tensor1 vec) (tensor2 vec))
   (if (eql (shape tensor1) 
@@ -272,10 +272,10 @@
       0))
 
 (defmethod .<= ((tensor1 scalar) (tensor2 vec))
-  (execute-dyadic-fun2 (vec-value tensor2) tensor1 #'.<=))
+  (execute-dyadic-fun2 tensor1 (vec-value tensor2) #'.<=))
 
 (defmethod .<= ((tensor1 vec) (tensor2 scalar))
-  (execute-dyadic-fun2 (vec-value tensor1) tensor2 #'.<=))
+  (execute-dyadic-fun3 (vec-value tensor1) tensor2 #'.<=))
 
 (defmethod .<= ((tensor1 vec) (tensor2 vec))
   (if (eql (shape tensor1) 
@@ -293,10 +293,10 @@
       0))
 
 (defmethod .>= ((tensor1 scalar) (tensor2 vec))
-  (execute-dyadic-fun2 (vec-value tensor2) tensor1 #'.>=))
+  (execute-dyadic-fun2 tensor1 (vec-value tensor2) #'.>=))
 
 (defmethod .>= ((tensor1 vec) (tensor2 scalar))
-  (execute-dyadic-fun2 (vec-value tensor1) tensor2 #'.>=))
+  (execute-dyadic-fun3 (vec-value tensor1) tensor2 #'.>=))
 
 (defmethod .>= ((tensor1 vec) (tensor2 vec))
   (if (eql (shape tensor1) 
@@ -314,10 +314,10 @@
       0))
 
 (defmethod .= ((tensor1 scalar) (tensor2 vec))
-  (execute-dyadic-fun2 (vec-value tensor2) tensor1 #'.=))
+  (execute-dyadic-fun2 tensor1 (vec-value tensor2) #'.=))
 
 (defmethod .= ((tensor1 vec) (tensor2 scalar))
-  (execute-dyadic-fun2 (vec-value tensor1) tensor2 #'.=))
+  (execute-dyadic-fun3 (vec-value tensor1) tensor2 #'.=))
 
 (defmethod .= ((tensor1 vec) (tensor2 vec))
   (if (eql (shape tensor1) 
@@ -335,10 +335,10 @@
       0))
 
 (defmethod .or ((tensor1 scalar) (tensor2 vec))
-  (execute-dyadic-fun2 (vec-value tensor2) tensor1 #'.or))
+  (execute-dyadic-fun2 tensor1 (vec-value tensor2) #'.or))
 
 (defmethod .or ((tensor1 vec) (tensor2 scalar))
-  (execute-dyadic-fun2 (vec-value tensor1) tensor2 #'.or))
+  (execute-dyadic-fun3 (vec-value tensor1) tensor2 #'.or))
 
 (defmethod .or ((tensor1 vec) (tensor2 vec))
   (if (eql (shape tensor1) 
@@ -357,10 +357,10 @@
       0))
 
 (defmethod .and ((tensor1 scalar) (tensor2 vec))
-  (execute-dyadic-fun2 (vec-value tensor2) tensor1 #'.and))
+  (execute-dyadic-fun2 tensor1 (vec-value tensor2) #'.and))
 
 (defmethod .and ((tensor1 vec) (tensor2 scalar))
-  (execute-dyadic-fun2 (vec-value tensor1) tensor2 #'.and))
+  (execute-dyadic-fun3 (vec-value tensor1) tensor2 #'.and))
 
 (defmethod .and ((tensor1 vec) (tensor2 vec))
   (if (eql (shape tensor1) 
@@ -422,10 +422,18 @@
 		lst)))
     (make-instance 'vec :value (make-array (list-length lst) :initial-contents (reverse lst)))))
 
-(defun execute-dyadic-fun2 (vec sca fun)
+(defun execute-dyadic-fun2 (sca vec fun)
   (let ((lst nil))
     (loop for index from 0 below (array-dimension vec 0)
 	 do (setf lst (cons (funcall fun sca
 			       (aref vec index))
+		  lst)))
+    (make-instance 'vec :value (make-array (list-length lst) :initial-contents (reverse lst)))))
+
+(defun execute-dyadic-fun3 (vec sca fun)
+  (let ((lst nil))
+    (loop for index from 0 below (array-dimension vec 0)
+	  do (setf lst (cons (funcall fun (aref vec index)
+				      sca)
 		  lst)))
     (make-instance 'vec :value (make-array (list-length lst) :initial-contents (reverse lst)))))
