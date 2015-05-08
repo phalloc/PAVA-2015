@@ -1,3 +1,10 @@
+;;;;;;;;;;;;;;;;;;;;;;;; GROUP 7 ;;;;;;;;;;;;;;;;;;;;;;;;
+; Diogo Costa - nº 72770                                ;
+; Joana Teixeira - nº 73393                             ;
+; Tiago Diogo - nº 73559                                ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;				       
+
+
 (defclass tensor()
   ((value :accessor tensor-value :initarg :value)))
 
@@ -6,7 +13,8 @@
   
 (defclass vec(tensor)
   ((value :accessor vec-value :initarg :value)))
- 
+
+; TODO: Matrixes and all respective funcions + operations
  
 (defmethod print-object ((tens tensor) stream)
   (print-object (tensor-value tens) stream))
