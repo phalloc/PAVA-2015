@@ -33,16 +33,27 @@
 ;MONADIC FUNCTIONS
 
 
-; Symmetric (.-)
-(defgeneric .- (tensor) )
+; Symmetric & Sub (.-)
+(defgeneric .- (tensor &rest values))
 
   
-(defmethod .- ((tensor scalar))
-  (s (* -1 (scalar-value tensor))))
+(defmethod .- ((tensor scalar) &rest tensors)
+  (cond ((null tensors) (s (* -1 (scalar-value tensor))))
+        ((eql (type-of (first tensors)) 'SCALAR) (s (- (scalar-value tensor) (scalar-value (first tensors)))))
+        ((eql (type-of (first tensors)) 'VEC) (execute-dyadic-fun2 (vec-value (first tensors)) tensor #'.-))
+    )
+  )
 
 
-(defmethod .- ((tensor vec))
-  (execute-monadic-fun (vec-value tensor) #'.-))
+(defmethod .- ((tensor vec) &rest tensors)
+  (cond ((null tensors) (execute-monadic-fun (vec-value tensor) #'.-))
+        ((eql (type-of (first tensors)) 'SCALAR) (s (- (scalar-value (first tensors)) (scalar-value tensor))))
+        ((and (eql (type-of (first tensors)) 'VEC)
+              (eql (shape tensor) (shape (first tensors))))
+          (execute-dyadic-fun (vec-value tensor) (vec-value (first tensors)) #'.-))
+      (T (print "Error: Tensors have different sizes"))
+    )
+  )
     
 ; Inverse (./)
 
@@ -145,10 +156,6 @@
       (execute-dyadic-fun (vec-value tensor1) (vec-value tensor2) #'.+)
       (print "Error: Tensors have different sizes")))
 
-
-; Sub (.-)
-
-; TODO
 
 ; Mul (.*)
 
