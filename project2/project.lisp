@@ -379,31 +379,32 @@
 (defgeneric catenate (tensor1 tensor2))
 
 (defmethod catenate ((tensor1 scalar) (tensor2 scalar))
-  (vector tensor1 tensor2))
+  (make-instance 'vec :value (make-array 2 :initial-contents (cons tensor1 (cons tensor2 nil)))))
 
-; PARTIDA
-(defmethod catenate ((tensor1 vector) (tensor2 vector))
-  (let ((result (make-array (+ (length tensor1) (length tensor2)) :fill-pointer 0))) 
-    (loop for index from 0 to (- (length tensor1) 1)
-	 do (vector-push (aref tensor1 index) result))
-    (loop for index from 0 to (- (length tensor2) 1)
-	 do (vector-push (aref tensor2 index) result))
-    result))
+(defmethod catenate ((tensor1 vec) (tensor2 vec))
+  (let ((lst nil))
+    (loop for index from 0 below (array-dimension (vec-value tensor1) 0)
+	 do (setf lst (cons (aref (vec-value tensor1) index) lst)))
+    (loop for index from 0 below (array-dimension (vec-value tensor2) 0)
+	  do (setf lst (cons (aref (vec-value tensor2) index) lst)))
+    (make-instance 'vec :value (make-array (list-length lst) :initial-contents (reverse lst)))))
 
 ; Member (member)
 
 (defgeneric member? (tensor1 tensor2))
 
-; NEEDS TO BE CORRECTED
-;(defmethod member? ((tensor1 vec) (tensor2 scalar))
-;  (let ((result (make-array (length (vec-value tensor1)))))
-;    (loop for index from 0 below (array-dimension (vec-value tensor1) 0)
-;       if (eql (aref (vec-value tensor1) index) tensor2)
-;       do (setf (aref result index) 1)
-;       else 
-;       do (setf (aref result index) 0))
-;    result))
+(defmethod member? ((tensor1 vec) (tensor2 scalar))
+  (let ((lst nil))
+    (loop for index from 0 below (array-dimension (vec-value tensor1) 0)
+       if (eql (scalar-value (aref (vec-value tensor1) index)) (scalar-value tensor2))
+       do (setf lst (cons 1 lst))
+       else 
+       do (setf lst (cons 0 lst)))
+    (make-instance 'vec :value (make-array (list-length lst) :initial-contents (reverse lst)))))    
 
+; OPERATORS
+; Monadic Operators
+; Dyadic Operators
 
     
 ; Auxiliary Functions
