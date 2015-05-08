@@ -403,7 +403,31 @@
     (make-instance 'vec :value (make-array (list-length lst) :initial-contents (reverse lst)))))    
 
 ; OPERATORS
+
 ; Monadic Operators
+
+
+(defun fold (fun)
+  (lambda (tensor)
+    (let ((result (aref (vec-value tensor) 0)))
+      (loop for index from 1 below (array-dimension (vec-value tensor) 0)
+	    do (setf result (funcall fun result (aref (vec-value tensor) index))))
+      result)))
+
+(defun scan (fun)
+  (lambda (tensor)
+    (let ((lst (cons (aref (vec-value tensor) 0) nil))
+	  (iteration 1))
+      (loop for i from 1 below (array-dimension (vec-value tensor) 0)
+	    do (let ((result (aref (vec-value tensor) 0)))
+		 (loop for j from 1 to iteration
+		       do (setf result (funcall fun result (aref (vec-value tensor) j))))
+		 (incf iteration)
+		 (setf lst (cons result lst))))
+      (make-instance 'vec :value (make-array (list-length lst) :initial-contents (reverse lst))))))   
+      
+      
+  
 ; Dyadic Operators
 
     
