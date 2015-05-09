@@ -439,7 +439,17 @@
 		 (incf iteration)
 		 (setf lst (cons result lst))))
       (make-instance 'vec :value (make-array (list-length lst) :initial-contents (reverse lst))))))   
-      
+
+(defun outer-product (fun)
+	(lambda (tensor1 tensor2)
+		(loop for i from 0 below (shape tensor1)
+			do (loop for j from 0 below (shape tensor2)
+					do (funcall fun (aref (vec-value tensor1) i) (aref (vec-value tensor2) j))
+				)
+
+		)
+
+	)
       
   
 ; Dyadic Operators
