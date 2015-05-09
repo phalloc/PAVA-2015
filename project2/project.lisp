@@ -42,7 +42,7 @@
 
 
 ; Symmetric & Sub (.-)
-(defgeneric .- (tensor &rest values))
+(defgeneric .- (tensor &rest tensors))
 
   
 (defmethod .- ((tensor scalar) &rest tensors)
@@ -63,15 +63,25 @@
     )
   )
     
-; Inverse (./)
+; Inverse & Div (./)
 
-(defgeneric ./ (tensor) )
+(defgeneric ./ (tensor &rest tensors) )
 
-(defmethod ./ ((tensor scalar))
-  (s (/ 1 (scalar-value tensor))))
+(defmethod ./ ((tensor scalar) &rest tensors)
+  (cond ((null tensors) (s (/ 1 (scalar-value tensor))))
+        ((eql (type-of (first tensors)) 'SCALAR) (s (/ (scalar-value tensor) (scalar-value (first tensors)))))
+        ((eql (type-of (first tensors)) 'VEC) (execute-dyadic-fun2 tensor (vec-value (first tensors)) #'./))
+   )
+  )
 
-(defmethod ./ ((tensor vec))
-  (execute-monadic-fun (vec-value tensor) #'./))
+(defmethod ./ ((tensor vec) &rest tensors)
+  (cond ((null tensors) (execute-monadic-fun (vec-value tensor) #'./))
+        ((eql (type-of (first tensors)) 'SCALAR) (execute-dyadic-fun3 (vec-value tensor) (first tensors) #'./))
+        ((and (eql (type-of (first tensors)) 'VEC)
+              (eql (shape tensor) (shape (first tensors))))
+          (execute-dyadic-fun (vec-value tensor) (vec-value (first tensors)) #'./))
+      (T (print "Error: Tensors have different sizes"))
+    ))
 		
 ; Factorial (.!)
 
@@ -183,10 +193,6 @@
 	   (shape tensor2))
       (execute-dyadic-fun (vec-value tensor1) (vec-value tensor2) #'.*)
       (print "Error: Tensors have different sizes")))
-
-; Div (./)
-
-; TODO
 
 
 ; Integer Division (.//)
