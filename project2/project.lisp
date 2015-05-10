@@ -607,6 +607,15 @@
     result
     ))
 
+(defun sum-special-dims (dims)
+  (let ((sum 1))
+    (if (null dims)
+      1
+      (dolist (dim dims)
+        (setf sum (* sum dim))))
+    sum))
+
+
 (defun get-special-dims (dims)
   (if (null (cddr dims))
     (list 1)
