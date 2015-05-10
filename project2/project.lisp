@@ -14,17 +14,97 @@
 (defclass vec(tensor)
   ((value :accessor vec-value :initarg :value)))
 
+;matrix-value: (make-array (lines.nr line.dim))
+(defclass matrix(tensor)
+  ((value :accessor matrix-value :initarg :value)
+   (dimensions :accessor matrix-dimensions :initarg :dimensions)))
+
 ; TODO: Matrixes and all respective funcions + operations
  
 (defmethod print-object ((tens tensor) stream)
   (print-object (tensor-value tens) stream))
  
-(defmethod print-object ((v array) stream)
+(defmethod print-object ((v vector) stream)
   (loop for x from 0 below (array-dimension v 0) do
     (format stream "~A " (aref v x)))
-    (format stream "~%"))
+  )
+
+(defmethod print-object ((mat matrix) stream)
+
+  (let* ((iteration 1)
+      (line 0)
+      (dims (matrix-dimensions mat))
+      (extra-dim (get-special-dims dims))
+      (space 1)
+      (count-space 0)
+      (num-times 0))
+
+    (loop for dim in extra-dim
+      do (progn
+            (setf num-times (all-dims-up-to extra-dim iteration))
+            (loop for times from 0 below num-times
+              do (progn 
+                    (setf line (print-block mat (first dims) stream line))
+
+                    ;newline for each dimension within a dimension
+                    (if (and (not (zerop times)) (eql (mod (1+ times) (first extra-dim)) 0))
+                      (progn 
+                          (setf space count-space) 
+                          (incf count-space)))
+
+                    ;print in-dimension newline
+                    (if (not (eql times (1- num-times)))
+                       (loop for newline from 0 to space
+                        do (progn
+                              (format stream "~%")
+                              (setf space 1))
+                        ))
+                    )
+            )
+        
+            (incf iteration)
+            (setf space 1)
+
+            ;print dimension change newline
+            (if (not (eql iteration (1+ (list-length extra-dim))))
+               (loop for newline from 0 to iteration
+                do(format stream "~%")))
+
+            
+            )
+            
+          )
+
+  )
+)
+
+;Printing a block (matrix)
+(defun print-block (mat dims stream line)
+    (loop for block from 0 below dims
+      do (progn 
+            (print-object (aref (matrix-value mat) line) stream)
+
+            (if (not (eql block (1- dims)))
+              (format stream "~%"))
+
+            (incf line)
+        ))
+    line)    
     
 
+(defun all-dims-up-to (dims it)
+  (let ((result (first dims)))
+      (if (not (eql it 1))
+        (loop for dim from 1 below it
+          if (eql dim (1- it))
+            do (setf result (* result (1- (nth dim dims))))
+          else
+            do (setf result (* result (nth dim dims)))
+
+          ))
+      result
+    )
+  )
 		
 ;SCALARS AND VECTORS
 (defun s (x)
@@ -59,9 +139,11 @@
         ((and (eql (type-of (first tensors)) 'VEC)
               (eql (shape tensor) (shape (first tensors))))
           (execute-dyadic-fun (vec-value tensor) (vec-value (first tensors)) #'.-))
-      (T (print "Error: Tensors have different sizes"))
+        (T (print "Error: Tensors have different sizes"))
     )
   )
+
+
     
 ; Inverse & Div (./)
 
@@ -388,6 +470,32 @@
 
 ; Reshape (reshape)
 
+(defgeneric reshape (dimensions tensor))
+
+(defmethod reshape ((dimensions vec) (tensor vec))
+  (let* ((dims (make-list-from-vec (vec-value dimensions)))
+         (total-dims (sum-special-dims dims))
+         (vector-build (make-array (second dims) :fill-pointer 0))
+         (matrix-lines (* (first dims) total-dims))
+         (result (make-array matrix-lines))
+         (index 0))
+
+        (loop for line from 0 below matrix-lines 
+              do (progn 
+                    (loop for column from 0 below (second dims)
+                      do (progn 
+                            (vector-push (aref (vec-value tensor) index) vector-build)
+                            (setf index (mod (+ index 1) (length (vec-value tensor))))))
+                    (setf (aref result line) (make-instance 'vec :value vector-build))
+                    (setf vector-build (make-array (second dims) :fill-pointer 0)))
+          )
+
+        (make-instance 'matrix :value result :dimensions dims)
+
+        )
+  )
+
+
 ; Catenate (catenate)
 
 (defgeneric catenate (tensor1 tensor2))
@@ -439,18 +547,23 @@
 		 (incf iteration)
 		 (setf lst (cons result lst))))
       (make-instance 'vec :value (make-array (list-length lst) :initial-contents (reverse lst))))))   
+  
 
 (defun outer-product (fun)
-	(lambda (tensor1 tensor2)
-		(loop for i from 0 below (shape tensor1)
-			do (loop for j from 0 below (shape tensor2)
-					do (funcall fun (aref (vec-value tensor1) i) (aref (vec-value tensor2) j))
-				)
+  (lambda (tensor1 tensor2)
+    (let ((result (make-array (shape tensor1)))
+          (vec (make-array (array-dimension (vec-value tensor2) 0))))
+        (loop for i from 0 below (shape tensor1)
+          do (progn 
+                (loop for j from 0 below (shape tensor2)
+                   do (setf (aref vec j) (funcall fun (s (aref (vec-value tensor1) i)) (s (aref (vec-value tensor2) j)))))
+                (setf (aref result i) (make-instance 'vec :value vec))
+                (setf vec (make-array (array-dimension (vec-value tensor2) 0)))
+            ))
+        (make-instance 'matrix :value result))
+    )
 
-		)
-
-	)
-      
+  )      
   
 ; Dyadic Operators
 
@@ -486,3 +599,15 @@
 				      sca)
 		  lst)))
     (make-instance 'vec :value (make-array (list-length lst) :initial-contents (reverse lst)))))
+
+(defun make-list-from-vec (vec)
+  (let ((result (list)))
+    (loop for i from 0 below (length vec)
+      do (setf result (append result (list (scalar-value (aref vec i))))))
+    result
+    ))
+
+(defun get-special-dims (dims)
+  (if (null (cddr dims))
+    (list 1)
+    (cddr dims)))
