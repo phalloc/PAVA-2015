@@ -31,56 +31,47 @@
 
 (defmethod print-object ((mat matrix) stream)
 
-  (let* ((iteration 1)
-      (line 0)
-      (dims (matrix-dimensions mat))
-      (extra-dim (get-special-dims dims))
-      (space 1)
-      (count-space 0)
-      (num-times 0))
+  (let* ((special-dims (get-special-dims (matrix-dimensions mat)))
+         (dims (make-array (list-length special-dims) :initial-contents special-dims))
+         (line 0)
+         (space-vector (make-array (sum-special-dims special-dims) :initial-element 1))
+         (spaces 1)
+         (v-index 0))
 
-    (loop for dim in extra-dim
-      do (progn
-            (setf num-times (all-dims-up-to extra-dim iteration))
-            (loop for times from 0 below num-times
-              do (progn 
-                    (setf line (print-block mat (first dims) stream line))
+        (loop for pace from 1 below (list-length special-dims)
+          do (progn 
+                (loop for index from 0 below pace
+                    do (setf spaces (* spaces (aref dims index)))
+                  )
 
-                    ;newline for each dimension within a dimension
-                    (if (and (not (zerop times)) (eql (mod (1+ times) (first extra-dim)) 0))
-                      (progn 
-                          (setf space count-space) 
-                          (incf count-space)))
+                (setf v-index (1- spaces))
+                (loop for index from (1- spaces) below (length space-vector)
+                  do (progn (incf (aref space-vector v-index))
+                             (setf v-index (+ v-index spaces))
+                             (if (> v-index (length space-vector))
+                              (return)
+                              )
+                       )
+                  )
+                (setf spaces 1)
+               )
+        )
+      (setf (aref space-vector (1- (length space-vector))) 0)
+      (format t "~A~%" space-vector)
+      (loop for iteration from 0 below (sum-special-dims special-dims)
 
-                    ;print in-dimension newline
-                    (if (not (eql times (1- num-times)))
-                       (loop for newline from 0 to space
-                        do (progn
-                              (format stream "~%")
-                              (setf space 1))
-                        ))
-                    )
-            )
-        
-            (incf iteration)
-            (setf space 1)
-
-            ;print dimension change newline
-            (if (not (eql iteration (1+ (list-length extra-dim))))
-               (loop for newline from 0 to iteration
-                do(format stream "~%")))
-
-            
-            )
-            
-          )
-
+          do (progn (print-block mat (first (matrix-dimensions mat)) line stream)
+                    (if (< iteration (1- (sum-special-dims special-dims)))
+                      (format stream "~%"))
+                    (print-spaces (aref space-vector iteration) stream))
+       )
   )
 )
 
-;Printing a block (matrix)
-(defun print-block (mat dims stream line)
-    (loop for block from 0 below dims
+
+(defun print-block (mat dims line stream)
+
+  (loop for block from 0 below dims
       do (progn 
             (print-object (aref (matrix-value mat) line) stream)
 
@@ -89,20 +80,11 @@
 
             (incf line)
         ))
-    line)    
-    
+  )
 
-(defun all-dims-up-to (dims it)
-  (let ((result (first dims)))
-      (if (not (eql it 1))
-        (loop for dim from 1 below it
-          if (eql dim (1- it))
-            do (setf result (* result (1- (nth dim dims))))
-          else
-            do (setf result (* result (nth dim dims)))
-
-          ))
-      result
+(defun print-spaces (number stream)
+  (loop for i from 0 below number
+    do (format stream "~%")
     )
   )
 		
@@ -129,8 +111,9 @@
   (cond ((null tensors) (s (* -1 (scalar-value tensor))))
         ((eql (type-of (first tensors)) 'SCALAR) (s (- (scalar-value tensor) (scalar-value (first tensors)))))
         ((eql (type-of (first tensors)) 'VEC) (execute-dyadic-fun2 tensor (vec-value (first tensors)) #'.-))
-   )
+        ((eql (type-of (first tensors)) 'MATRIX) (execute-dyadic-fun-matrixSM tensor (first tensors) #'.-))
   )
+) 
 
 
 (defmethod .- ((tensor vec) &rest tensors)
@@ -142,6 +125,7 @@
         (T (print "Error: Tensors have different sizes"))
     )
   )
+
 
 
     
@@ -220,10 +204,13 @@
 (defgeneric shape (tensor))
 
 (defmethod shape ((tensor scalar))
-  0)
+  (v ))
 
 (defmethod shape ((tensor vec))
-  (length (vec-value tensor)))
+  (v (length (vec-value tensor))))
+
+(defmethod shape ((tensor matrix))
+  (matrix-dimensions tensor))
 
 ; Interval
 
@@ -474,8 +461,8 @@
 
 (defmethod reshape ((dimensions vec) (tensor vec))
   (let* ((dims (make-list-from-vec (vec-value dimensions)))
-         (total-dims (sum-special-dims dims))
-         (vector-build (make-array (second dims) :fill-pointer 0))
+         (total-dims (sum-special-dims (get-special-dims dims)))
+         (vector-build ((make-array (second dims) :fill-pointer 0)))
          (matrix-lines (* (first dims) total-dims))
          (result (make-array matrix-lines))
          (index 0))
@@ -560,7 +547,7 @@
                 (setf (aref result i) (make-instance 'vec :value vec))
                 (setf vec (make-array (array-dimension (vec-value tensor2) 0)))
             ))
-        (make-instance 'matrix :value result))
+        (make-instance 'matrix :value result :dimensions (catenate (shape tensor1) (shape tensor2))))
     )
 
   )      
@@ -575,6 +562,12 @@
     (loop for index from 0 below (array-dimension vec 0)
        do (setf lst (cons (funcall fun (aref vec index)) lst)))
     (make-instance 'vec :value (make-array (list-length lst) :initial-contents (reverse lst)))))
+
+(defun execute-monadic-funM (m fun)
+  (let ((result (make-array (length (matrix-value m)))))
+    (loop for index from 0 below (length (matrix-value m))
+       do (setf (aref result index) (execute-monadic-fun (aref (matrix-value m) index) fun)))
+    (make-instance 'matrix :value result :dimensions (matrix-dimensions m))))
 
 (defun execute-dyadic-fun (vec1 vec2 fun)
   (let ((lst nil))
@@ -599,6 +592,19 @@
 				      sca)
 		  lst)))
     (make-instance 'vec :value (make-array (list-length lst) :initial-contents (reverse lst)))))
+
+(defun execute-dyadic-fun-matrixSM (sca m fun)
+  (let ((result (make-array (length (matrix-value m)))))
+  (loop for index from 0 below (length (matrix-value m))
+    do (progn (setf (aref result index) (execute-dyadic-fun2 sca (aref (matrix-value m) index) fun)) (print (aref result index))))
+    (make-instance 'matrix :value result :dimensions (matrix-dimensions m))))
+
+(defun execute-dyadic-fun-matrixMS (m sca fun)
+  (let ((result (make-array (length (matrix-value m)))))
+  (loop for index from 0 below (length (matrix-value m))
+    do (setf (aref result index) (execute-dyadic-fun2 (aref (matrix-value m) index) sca fun)))
+    (make-instance 'matrix :value result :dimensions (matrix-dimensions m))))
+
 
 (defun make-list-from-vec (vec)
   (let ((result (list)))
