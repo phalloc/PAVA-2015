@@ -89,8 +89,10 @@
 	(make-instance 'scalar :value x))
 
 (defun v (&rest values)
-  (make-instance 'vec :value (make-array (list-length values) :initial-contents values)))
-
+  (let ((result (make-array (list-length values))))
+    (loop for index from 0 below (list-length values)
+	  do (setf (aref result index) (s (nth index values))))
+  (make-instance 'vec :value result)))
 
 		
 ;MONADIC FUNCTIONS
@@ -108,7 +110,7 @@
 
 
 (defmethod .- ((tensor vec) &rest tensors)
-  (cond ((null tensors) (execute-monadic-fun (vec-value tensor) #'.-))
+  (cond ((null tensors) (execute-monadic-fun-V (vec-value tensor) #'.-))
         ((eql (type-of (first tensors)) 'SCALAR) (execute-dyadic-fun3 (vec-value tensor) (first tensors) #'.-))
         ((and (equal (type-of (first tensors)) 'VEC)
               (equal-shape? (shape tensor) (shape (first tensors))))
@@ -135,7 +137,7 @@
 
 
 (defmethod ./ ((tensor vec) &rest tensors)
-  (cond ((null tensors) (execute-monadic-fun (vec-value tensor) #'./))
+  (cond ((null tensors) (execute-monadic-fun-V (vec-value tensor) #'./))
         ((eql (type-of (first tensors)) 'SCALAR) (execute-dyadic-fun3 (vec-value tensor) (first tensors) #'./))
         ((and (equal (type-of (first tensors)) 'VEC)
               (equal-shape? (shape tensor) (shape (first tensors))))
@@ -163,7 +165,7 @@
   (s (fact (scalar-value tensor))))
 
 (defmethod .! ((tensor vec))
-  (execute-monadic-fun (vec-value tensor) #'.!))
+  (execute-monadic-fun-V (vec-value tensor) #'.!))
 
 (defmethod .! ((tensor matrix))
   (execute-monadic-fun-M tensor #'.!))
@@ -176,7 +178,7 @@
   (s (sin (scalar-value tensor))))
 
 (defmethod .sin ((tensor vec))
-  (execute-monadic-fun (vec-value tensor) #'.sin))
+  (execute-monadic-fun-V (vec-value tensor) #'.sin))
 
 (defmethod .sin ((tensor matrix))
   (execute-monadic-fun-M tensor #'.sin))
@@ -189,7 +191,7 @@
   (s (cos (scalar-value tensor))))
 
 (defmethod .cos ((tensor vec))
-  (execute-monadic-fun (vec-value tensor) #'.cos))
+  (execute-monadic-fun-V (vec-value tensor) #'.cos))
 
 (defmethod .cos ((tensor matrix))
   (execute-monadic-fun-M tensor #'.cos))
@@ -204,7 +206,7 @@
       (s 0)))
 
 (defmethod .not ((tensor vec))
-  (execute-monadic-fun (vec-value tensor) #'.not))
+  (execute-monadic-fun-V (vec-value tensor) #'.not))
 
 (defmethod .not ((tensor matrix))
   (execute-monadic-fun-M tensor #'.not))
@@ -911,11 +913,11 @@
 
 ; Auxiliary Functions
 
-(defun execute-monadic-fun (vec fun)
-  (let ((lst nil))
-    (loop for index from 0 below (array-dimension vec 0)
-       do (setf lst (cons (funcall fun (aref vec index)) lst)))
-    (make-instance 'vec :value (make-array (list-length lst) :initial-contents (reverse lst)))))
+(defun execute-monadic-fun-V (vec fun)
+  (let ((result (make-array (length vec))))
+    (loop for index from 0 below (length vec)
+       do (setf (aref result index) (funcall fun (aref vec index))))
+    (make-instance 'vec :value result)))
 
 (defun execute-monadic-fun-M (m fun)
   (let ((result (make-array (length (matrix-value m)))))
