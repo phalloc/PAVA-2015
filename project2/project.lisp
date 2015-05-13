@@ -22,9 +22,9 @@
 (defmethod print-object ((tens tensor) stream)
   (print-object (tensor-value tens) stream))
  
-(defmethod print-object ((v vector) stream)
-  (loop for x from 0 below (array-dimension v 0) do
-    (format stream "~A " (aref v x)))
+(defmethod print-object ((tens vec) stream)
+  (loop for index from 0 below (length (vec-value tens)) do
+    (format stream "~A " (aref (vec-value tens) index)))
   )
 
 (defmethod print-object ((mat matrix) stream)
