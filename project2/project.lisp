@@ -105,16 +105,16 @@
 (defmethod .- ((tensor scalar) &rest tensors)
   (cond ((null tensors) (s (* -1 (scalar-value tensor))))
         ((eql (type-of (first tensors)) 'SCALAR) (s (- (scalar-value tensor) (scalar-value (first tensors)))))
-        ((eql (type-of (first tensors)) 'VEC) (execute-dyadic-fun2 tensor (vec-value (first tensors)) #'.-))
+        ((eql (type-of (first tensors)) 'VEC) (execute-dyadic-fun-SV tensor (vec-value (first tensors)) #'.-))
         ((eql (type-of (first tensors)) 'MATRIX) (execute-dyadic-fun-SM tensor (first tensors) #'.-)))) 
 
 
 (defmethod .- ((tensor vec) &rest tensors)
   (cond ((null tensors) (execute-monadic-fun-V (vec-value tensor) #'.-))
-        ((eql (type-of (first tensors)) 'SCALAR) (execute-dyadic-fun3 (vec-value tensor) (first tensors) #'.-))
+        ((eql (type-of (first tensors)) 'SCALAR) (execute-dyadic-fun-VS (vec-value tensor) (first tensors) #'.-))
         ((and (equal (type-of (first tensors)) 'VEC)
               (equal-shape? (shape tensor) (shape (first tensors))))
-          (execute-dyadic-fun (vec-value tensor) (vec-value (first tensors)) #'.-))
+          (execute-dyadic-fun-VV (vec-value tensor) (vec-value (first tensors)) #'.-))
         (T (print "Error: Tensors have different sizes"))))
 
 (defmethod .- ((tensor matrix) &rest tensors)
@@ -132,16 +132,16 @@
 (defmethod ./ ((tensor scalar) &rest tensors)
   (cond ((null tensors) (s (/ 1 (scalar-value tensor))))
         ((eql (type-of (first tensors)) 'SCALAR) (s (/ (scalar-value tensor) (scalar-value (first tensors)))))
-        ((eql (type-of (first tensors)) 'VEC) (execute-dyadic-fun2 tensor (vec-value (first tensors)) #'./))
+        ((eql (type-of (first tensors)) 'VEC) (execute-dyadic-fun-SV tensor (vec-value (first tensors)) #'./))
 	((eql (type-of (first tensors)) 'MATRIX) (execute-dyadic-fun-SM tensor (first tensors) #'./)))) 
 
 
 (defmethod ./ ((tensor vec) &rest tensors)
   (cond ((null tensors) (execute-monadic-fun-V (vec-value tensor) #'./))
-        ((eql (type-of (first tensors)) 'SCALAR) (execute-dyadic-fun3 (vec-value tensor) (first tensors) #'./))
+        ((eql (type-of (first tensors)) 'SCALAR) (execute-dyadic-fun-VS (vec-value tensor) (first tensors) #'./))
         ((and (equal (type-of (first tensors)) 'VEC)
               (equal-shape? (shape tensor) (shape (first tensors))))
-          (execute-dyadic-fun (vec-value tensor) (vec-value (first tensors)) #'./))
+          (execute-dyadic-fun-VV (vec-value tensor) (vec-value (first tensors)) #'./))
         (T (print "Error: Tensors have different sizes"))))
 
 (defmethod ./ ((tensor matrix) &rest tensors)
@@ -273,18 +273,18 @@
   (s (+ (scalar-value tensor1) (scalar-value tensor2))))
 
 (defmethod .+ ((tensor1 scalar) (tensor2 vec))
-  (execute-dyadic-fun2 tensor1 (vec-value tensor2) #'.+))
+  (execute-dyadic-fun-SV tensor1 (vec-value tensor2) #'.+))
 
 (defmethod .+ ((tensor1 scalar) (tensor2 matrix))
   (execute-dyadic-fun-SM tensor1 tensor2 #'.+))
 
 (defmethod .+ ((tensor1 vec) (tensor2 scalar))
-  (execute-dyadic-fun3 (vec-value tensor1) tensor2 #'.+))
+  (execute-dyadic-fun-VS (vec-value tensor1) tensor2 #'.+))
 
 (defmethod .+ ((tensor1 vec) (tensor2 vec))
   (if (equal-shape? (shape tensor1) 
 		    (shape tensor2))
-      (execute-dyadic-fun (vec-value tensor1) (vec-value tensor2) #'.+)
+      (execute-dyadic-fun-VV (vec-value tensor1) (vec-value tensor2) #'.+)
       (print "Error: Tensors have different sizes")))
 
 (defmethod .+ ((tensor1 matrix) (tensor2 scalar))
@@ -305,15 +305,15 @@
   (s (* (scalar-value tensor1) (scalar-value tensor2))))
 
 (defmethod .* ((tensor1 scalar) (tensor2 vec))
-  (execute-dyadic-fun2 tensor1 (vec-value tensor2) #'.*))
+  (execute-dyadic-fun-SV tensor1 (vec-value tensor2) #'.*))
 
 (defmethod .* ((tensor1 vec) (tensor2 scalar))
-  (execute-dyadic-fun3 (vec-value tensor1) tensor2 #'.*))
+  (execute-dyadic-fun-VS (vec-value tensor1) tensor2 #'.*))
 
 (defmethod .* ((tensor1 vec) (tensor2 vec))
   (if (equal-shape? (shape tensor1) 
 		    (shape tensor2))
-      (execute-dyadic-fun (vec-value tensor1) (vec-value tensor2) #'.*)
+      (execute-dyadic-fun-VV (vec-value tensor1) (vec-value tensor2) #'.*)
     (print "Error: Tensors have different sizes")))
 
 (defmethod .* ((tensor1 matrix) (tensor2 scalar))
@@ -335,15 +335,15 @@
   (s result)))
 
 (defmethod .// ((tensor1 scalar) (tensor2 vec))
-  (execute-dyadic-fun2 tensor1 (vec-value tensor2) #'.//))
+  (execute-dyadic-fun-SV tensor1 (vec-value tensor2) #'.//))
 
 (defmethod .// ((tensor1 vec) (tensor2 scalar))
-  (execute-dyadic-fun3 (vec-value tensor1) tensor2 #'.//))
+  (execute-dyadic-fun-VS (vec-value tensor1) tensor2 #'.//))
 
 (defmethod .// ((tensor1 vec) (tensor2 vec))
   (if (equal-shape? (shape tensor1) 
 		    (shape tensor2))
-      (execute-dyadic-fun (vec-value tensor1) (vec-value tensor2) #'.//)
+      (execute-dyadic-fun-VV (vec-value tensor1) (vec-value tensor2) #'.//)
     (print "Error: Tensors have different sizes")))
 
 (defmethod .// ((tensor1 matrix) (tensor2 scalar))
@@ -363,15 +363,15 @@
   (s (mod (scalar-value tensor1) (scalar-value tensor2))))
 
 (defmethod .% ((tensor1 scalar) (tensor2 vec))
-  (execute-dyadic-fun2 tensor1 (vec-value tensor2) #'.%))
+  (execute-dyadic-fun-SV tensor1 (vec-value tensor2) #'.%))
 
 (defmethod .% ((tensor1 vec) (tensor2 scalar))
-  (execute-dyadic-fun3 (vec-value tensor1) tensor2 #'.%))
+  (execute-dyadic-fun-VS (vec-value tensor1) tensor2 #'.%))
 
 (defmethod .% ((tensor1 vec) (tensor2 vec))
   (if (equal-shape? (shape tensor1) 
 		    (shape tensor2))
-      (execute-dyadic-fun (vec-value tensor1) (vec-value tensor2) #'.%)
+      (execute-dyadic-fun-VV (vec-value tensor1) (vec-value tensor2) #'.%)
     (print "Error: Tensors have different sizes")))
 
 (defmethod .% ((tensor1 matrix) (tensor2 scalar))
@@ -393,15 +393,15 @@
       (s 0)))
 
 (defmethod .< ((tensor1 scalar) (tensor2 vec))
-  (execute-dyadic-fun2 tensor1 (vec-value tensor2) #'.<))
+  (execute-dyadic-fun-SV tensor1 (vec-value tensor2) #'.<))
 
 (defmethod .< ((tensor1 vec) (tensor2 scalar))
-  (execute-dyadic-fun3 (vec-value tensor1) tensor2 #'.<))
+  (execute-dyadic-fun-VS (vec-value tensor1) tensor2 #'.<))
 
 (defmethod .< ((tensor1 vec) (tensor2 vec))
   (if (equal-shape? (shape tensor1) 
 		    (shape tensor2))
-      (execute-dyadic-fun (vec-value tensor1) (vec-value tensor2) #'.<)
+      (execute-dyadic-fun-VV (vec-value tensor1) (vec-value tensor2) #'.<)
     (print "Error: Tensors have different sizes")))
 
 (defmethod .< ((tensor1 matrix) (tensor2 scalar))
@@ -423,15 +423,15 @@
       (s 0)))
 
 (defmethod .> ((tensor1 scalar) (tensor2 vec))
-  (execute-dyadic-fun2 tensor1 (vec-value tensor2) #'.>))
+  (execute-dyadic-fun-SV tensor1 (vec-value tensor2) #'.>))
 
 (defmethod .> ((tensor1 vec) (tensor2 scalar))
-  (execute-dyadic-fun3 (vec-value tensor1) tensor2 #'.>))
+  (execute-dyadic-fun-VS (vec-value tensor1) tensor2 #'.>))
 
 (defmethod .> ((tensor1 vec) (tensor2 vec))
   (if (equal-shape? (shape tensor1) 
 		    (shape tensor2))
-      (execute-dyadic-fun (vec-value tensor1) (vec-value tensor2) #'.>)
+      (execute-dyadic-fun-VV (vec-value tensor1) (vec-value tensor2) #'.>)
     (print "Error: Tensors have different sizes")))
 
 (defmethod .> ((tensor1 matrix) (tensor2 scalar))
@@ -453,15 +453,15 @@
       (s 0)))
 
 (defmethod .<= ((tensor1 scalar) (tensor2 vec))
-  (execute-dyadic-fun2 tensor1 (vec-value tensor2) #'.<=))
+  (execute-dyadic-fun-SV tensor1 (vec-value tensor2) #'.<=))
 
 (defmethod .<= ((tensor1 vec) (tensor2 scalar))
-  (execute-dyadic-fun3 (vec-value tensor1) tensor2 #'.<=))
+  (execute-dyadic-fun-VS (vec-value tensor1) tensor2 #'.<=))
 
 (defmethod .<= ((tensor1 vec) (tensor2 vec))
   (if (equal-shape? (shape tensor1) 
 		    (shape tensor2))
-      (execute-dyadic-fun (vec-value tensor1) (vec-value tensor2) #'.<=)
+      (execute-dyadic-fun-VV (vec-value tensor1) (vec-value tensor2) #'.<=)
     (print "Error: Tensors have different sizes")))
 
 (defmethod .<= ((tensor1 matrix) (tensor2 scalar))
@@ -484,15 +484,15 @@
       (s 0)))
 
 (defmethod .>= ((tensor1 scalar) (tensor2 vec))
-  (execute-dyadic-fun2 tensor1 (vec-value tensor2) #'.>=))
+  (execute-dyadic-fun-SV tensor1 (vec-value tensor2) #'.>=))
 
 (defmethod .>= ((tensor1 vec) (tensor2 scalar))
-  (execute-dyadic-fun3 (vec-value tensor1) tensor2 #'.>=))
+  (execute-dyadic-fun-VS (vec-value tensor1) tensor2 #'.>=))
 
 (defmethod .>= ((tensor1 vec) (tensor2 vec))
   (if (equal-shape? (shape tensor1) 
 		    (shape tensor2))
-      (execute-dyadic-fun (vec-value tensor1) (vec-value tensor2) #'.>=)
+      (execute-dyadic-fun-VV (vec-value tensor1) (vec-value tensor2) #'.>=)
     (print "Error: Tensors have different sizes")))
 
 (defmethod .>= ((tensor1 matrix) (tensor2 scalar))
@@ -514,15 +514,15 @@
       (s 0)))
 
 (defmethod .= ((tensor1 scalar) (tensor2 vec))
-  (execute-dyadic-fun2 tensor1 (vec-value tensor2) #'.=))
+  (execute-dyadic-fun-SV tensor1 (vec-value tensor2) #'.=))
 
 (defmethod .= ((tensor1 vec) (tensor2 scalar))
-  (execute-dyadic-fun3 (vec-value tensor1) tensor2 #'.=))
+  (execute-dyadic-fun-VS (vec-value tensor1) tensor2 #'.=))
 
 (defmethod .= ((tensor1 vec) (tensor2 vec))
   (if (equal-shape? (shape tensor1) 
 		    (shape tensor2))
-      (execute-dyadic-fun (vec-value tensor1) (vec-value tensor2) #'.=)
+      (execute-dyadic-fun-VV (vec-value tensor1) (vec-value tensor2) #'.=)
     (print "Error: Tensors have different sizes")))
 
 (defmethod .= ((tensor1 matrix) (tensor2 scalar))
@@ -544,15 +544,15 @@
       (s 0)))
 
 (defmethod .or ((tensor1 scalar) (tensor2 vec))
-  (execute-dyadic-fun2 tensor1 (vec-value tensor2) #'.or))
+  (execute-dyadic-fun-SV tensor1 (vec-value tensor2) #'.or))
 
 (defmethod .or ((tensor1 vec) (tensor2 scalar))
-  (execute-dyadic-fun3 (vec-value tensor1) tensor2 #'.or))
+  (execute-dyadic-fun-VS (vec-value tensor1) tensor2 #'.or))
 
 (defmethod .or ((tensor1 vec) (tensor2 vec))
   (if (equal-shape? (shape tensor1) 
 		    (shape tensor2))
-      (execute-dyadic-fun (vec-value tensor1) (vec-value tensor2) #'.or)
+      (execute-dyadic-fun-VV (vec-value tensor1) (vec-value tensor2) #'.or)
     (print "Error: Tensors have different sizes")))
 
 (defmethod .or ((tensor1 matrix) (tensor2 scalar))
@@ -575,15 +575,15 @@
       (s 0)))
 
 (defmethod .and ((tensor1 scalar) (tensor2 vec))
-  (execute-dyadic-fun2 tensor1 (vec-value tensor2) #'.and))
+  (execute-dyadic-fun-SV tensor1 (vec-value tensor2) #'.and))
 
 (defmethod .and ((tensor1 vec) (tensor2 scalar))
-  (execute-dyadic-fun3 (vec-value tensor1) tensor2 #'.and))
+  (execute-dyadic-fun-VS (vec-value tensor1) tensor2 #'.and))
 
 (defmethod .and ((tensor1 vec) (tensor2 vec))
   (if (equal-shape? (shape tensor1) 
 		    (shape tensor2))
-      (execute-dyadic-fun (vec-value tensor1) (vec-value tensor2) #'.and)
+      (execute-dyadic-fun-VV (vec-value tensor1) (vec-value tensor2) #'.and)
     (print "Error: Tensors have different sizes")))
 
 (defmethod .and ((tensor1 matrix) (tensor2 scalar))
@@ -925,29 +925,24 @@
        do (setf (aref result index) (execute-monadic-fun (vec-value (aref (matrix-value m) index)) fun)))
     (make-instance 'matrix :value result :dimensions (matrix-dimensions m))))
 
-(defun execute-dyadic-fun (vec1 vec2 fun)
-  (let ((lst nil))
-    (loop for index from 0 below (array-dimension vec1 0)
-       do (setf lst (cons	(funcall fun (aref vec1 index)
-			     (aref vec2 index)) 
-		lst)))
-    (make-instance 'vec :value (make-array (list-length lst) :initial-contents (reverse lst)))))
+(defun execute-dyadic-fun-VV (vec1 vec2 fun)
+  (let ((result (make-array (length vec1))))
+    (loop for index from 0 below (length vec1)
+       do (setf (aref result index) (funcall fun (aref vec1 index)
+			                         (aref vec2 index))))
+    (make-instance 'vec :value result)))
 
-(defun execute-dyadic-fun2 (sca vec fun)
-  (let ((lst nil))
+(defun execute-dyadic-fun-SV (sca vec fun)
+  (let ((result (make-array (length vec))))
     (loop for index from 0 below (array-dimension vec 0)
-	 do (setf lst (cons (funcall fun sca
-			       (aref vec index))
-		  lst)))
-    (make-instance 'vec :value (make-array (list-length lst) :initial-contents (reverse lst)))))
+	 do (setf (aref result index) (funcall fun sca (aref vec index))))
+    (make-instance 'vec :value result)))
 
-(defun execute-dyadic-fun3 (vec sca fun)
-  (let ((lst nil))
-    (loop for index from 0 below (array-dimension vec 0)
-	  do (setf lst (cons (funcall fun (aref vec index)
-				      sca)
-		  lst)))
-    (make-instance 'vec :value (make-array (list-length lst) :initial-contents (reverse lst)))))
+(defun execute-dyadic-fun-VS (vec sca fun)
+  (let ((result (make-array (length vec))))
+    (loop for index from 0 below (length vec)
+	  do (setf (aref result index) (funcall fun (aref vec index) sca)))
+    (make-instance 'vec :value result)))
 
 (defun execute-dyadic-fun-SM (sca m fun)
   (let ((result (make-array (length (matrix-value m)))))
