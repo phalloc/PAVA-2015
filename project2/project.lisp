@@ -599,6 +599,19 @@
 
 ; Drop (drop)
 
+(defgeneric drop (tensor1 tensor2))
+
+(defmethod drop ((tensor1 scalar) (tensor2 vec))
+  (let ((result (make-instance 'vec :value (make-array (- (length (vec-value tensor2)) (abs (scalar-value tensor1)))))))
+    (if (> (scalar-value tensor1) 0)
+	(loop for i from (scalar-value tensor1) below (length (vec-value tensor2))
+	      do (setf (aref (vec-value result) (- i (scalar-value tensor1))) (aref (vec-value tensor2) i)))
+      (loop for i from 0 below (- (length (vec-value tensor2)) (abs (scalar-value tensor1)))
+	    do (setf (aref (vec-value result) i) (aref (vec-value tensor2) i))))
+    result))
+
+(defmethod drop ((tensor1 scalar) (tensor2 matrix)))
+  
 
 ; Catenate (catenate)
 
@@ -628,6 +641,21 @@
        do (setf lst (cons (s 0) lst)))
     (make-instance 'vec :value (make-array (list-length lst) :initial-contents (reverse lst)))))
 
+(defmethod member? ((tensor1 vec) (tensor2 vec))
+  (let ((result (make-instance 'vec :value (make-array (length (vec-value tensor1)))))
+	(exists nil))
+    (loop for i from 0 below (length (vec-value tensor1))
+	  do (progn (loop for j from 0 below (length (vec-value tensor2))
+			  do (if (eql (scalar-value (aref (vec-value tensor1) i))
+				      (scalar-value (aref (vec-value tensor2) j)))
+				 (progn (setf exists T)
+					(return))))
+		    (if exists
+			(setf (aref (vec-value result) i) (s 1))
+		      (setf (aref (vec-value result) i) (s 0)))))
+    result))
+			       
+
 ; Select (select)
 
 (defgeneric select (tensor1 tensor2))
@@ -643,9 +671,23 @@
 	
 	       (make-instance 'vec :value (make-array (list-length lst) :initial-contents (reverse lst)))))))
 
-(defmethod select ((tensor1 vec) (tensor2 matrix)))
+(defmethod select ((tensor1 vec) (tensor2 matrix))
+  (let* ((lines (first (matrix-dimensions tensor2)))
+	 (result (make-array lines)))
+    (loop for i from 0 below lines
+	  do (setf (aref result i) (select tensor1 (aref (matrix-value tensor2) (+ i (- (length (matrix-value tensor2)) lines))))))
+    (make-instance 'matrix :value result :dimensions (list lines (length (vec-value (aref result 0)))))))
+    
 
-(defmethod select ((tensor1 matrix) (tensor2 matrix)))
+(defmethod select ((tensor1 matrix) (tensor2 matrix))
+  (let* ((lines (first (matrix-dimensions tensor2)))
+	 (result (make-array lines)))
+    (if (equal-shape? (shape tensor1)
+		      (shape tensor2))
+	 (loop for i from 0 below lines
+	       do (setf (aref result i) (select (aref (matrix-value tensor1) (+ i (- (length (matrix-value tensor1)) lines)))
+						(aref (matrix-value tensor2) (+ i (- (length (matrix-value tensor2)) lines))))))
+      (make-instance 'matrix :value result :dimensions (list lines (length (vec-value (aref result 0))))))))
 
 ; OPERATORS
 
@@ -654,10 +696,12 @@
 
 (defun fold (fun)
   (lambda (tensor)
-    (let ((result (aref (vec-value tensor) 0)))
-      (loop for index from 1 below (array-dimension (vec-value tensor) 0)
-	    do (setf result (funcall fun result (aref (vec-value tensor) index))))
-      result)))
+    (if (eql 0 (length (vec-value tensor)))
+	(s 0)
+      (let ((result (aref (vec-value tensor) 0)))
+	(loop for index from 1 below (array-dimension (vec-value tensor) 0)
+	      do (setf result (funcall fun result (aref (vec-value tensor) index))))
+	result))))
 
 (defun scan (fun)
   (lambda (tensor)
@@ -674,23 +718,100 @@
 
 (defun outer-product (fun)
   (lambda (tensor1 tensor2)
-    (let ((result (make-array (shape tensor1)))
-          (vec (make-array (array-dimension (vec-value tensor2) 0))))
-        (loop for i from 0 below (shape tensor1)
-          do (progn 
-                (loop for j from 0 below (shape tensor2)
-                   do (setf (aref vec j) (funcall fun (s (aref (vec-value tensor1) i)) (s (aref (vec-value tensor2) j)))))
-                (setf (aref result i) (make-instance 'vec :value vec))
-                (setf vec (make-array (array-dimension (vec-value tensor2) 0)))
-            ))
-        (make-instance 'matrix :value result :dimensions (catenate (shape tensor1) (shape tensor2))))
-    )
+    (outer-product-aux tensor1 tensor2 fun)))
+   
 
-  )      
+(defgeneric outer-product-aux (tensor1 tensor2 fun))
+
+(defmethod outer-product-aux ((tensor1 scalar) (tensor2 scalar) fun)
+  (funcall fun tensor1 tensor2))
+
+(defmethod outer-product-aux ((tensor1 scalar) (tensor2 vec) fun)
+  (let ((result (make-array (length (vec-value tensor2)))))
+    (loop for index from 0 below (length (vec-value tensor2))
+	  do (setf (aref result index) (funcall fun tensor1 (aref (vec-value tensor2) index))))
+    (make-instance 'vec :value result)))
+
+(defmethod outer-product-aux ((tensor1 scalar) (tensor2 matrix) fun)
+  (let ((result (make-array (length (matrix-value tensor2))))
+	(vec (make-array (first (matrix-dimensions tensor2)))))
+    (loop for i from 0 below (length (matrix-value tensor2))
+	  do (progn (loop for j from 0 below (first (matrix-dimensions tensor2))
+			  do (setf (aref vec j) (funcall fun tensor1 (aref (vec-value (aref (matrix-value tensor2) i)) j))))
+		    (setf (aref result i) vec)
+		    (setf vec (make-array (first (matrix-dimensions tensor2))))))
+    (make-instance 'matrix :value result :dimensions (matrix-dimensions tensor2))))
+
+(defmethod outer-product-aux ((tensor1 vec) (tensor2 scalar) fun)
+   (let ((result (make-array (length (vec-value tensor1)))))
+    (loop for index from 0 below (length (vec-value tensor1))
+	  do (setf (aref result index) (funcall fun (aref (vec-value tensor1) index) tensor2)))
+    (make-instance 'vec :value result)))
+
+(defmethod outer-product-aux ((tensor1 vec) (tensor2 vec) fun)
+  (let ((result (make-array (length (vec-value tensor1))))
+	(vec (make-array (length (vec-value tensor2)))))
+    (loop for i from 0 below (length (vec-value tensor1))
+          do (progn 
+	       (loop for j from 0 below (length (vec-value tensor2))
+		     do (setf (aref vec j) (funcall fun (aref (vec-value tensor1) i) (aref (vec-value tensor2) j))))
+	       (setf (aref result i) (make-instance 'vec :value vec))
+	       (setf vec (make-array (length (vec-value tensor2))))))
+    (make-instance 'matrix :value result :dimensions (make-list-from-vec (vec-value (catenate (shape tensor1) (shape tensor2)))))))
+
+(defmethod outer-product-aux ((tensor1 vec) (tensor2 matrix) fun))
+
+(defmethod outer-product-aux ((tensor1 matrix) (tensor2 scalar) fun)
+    (let ((result (make-array (length (matrix-value tensor1))))
+	  (vec (make-array (first (matrix-dimensions tensor1)))))
+      (loop for i from 0 below (length (matrix-value tensor1))
+	    do (progn (loop for j from 0 below (first (matrix-dimensions tensor1))
+			    do (setf (aref vec j) (funcall fun (aref (vec-value (aref (matrix-value tensor1) i)) j) tensor2)))
+		      (setf (aref result i) vec)
+		      (setf vec (make-array (first (matrix-dimensions tensor1))))))
+      (make-instance 'matrix :value result :dimensions (matrix-dimensions tensor1))))
+
+(defmethod outer-product-aux ((tensor1 matrix) (tensor2 vec) fun))
+
+(defmethod outer-product-aux ((tensor1 matrix) (tensor2 matrix) fun))
+  
+
   
 ; Dyadic Operators
 
+;(defun inner-product (f1 f2)
+;  (lambda (tensor1 tensor2)
     
+
+; Exercises
+
+
+; 1. Tally
+
+(defun tally (arg)
+  (funcall (fold #'.*) (shape arg)))
+
+; 2. Rank
+
+(defun rank (arg)
+  (funcall (fold #'.+) (member? (shape arg) (shape arg))))
+
+; 3. Within
+
+(defun within (vec min max)
+  (select (.and (funcall (outer-product #'.>=)  vec min) (funcall (outer-product #'.<=) vec max)) vec))
+
+; 4. Ravel
+
+(defun ravel (arg)
+  (reshape
+   (catenate (v 1)
+	     (catenate (tally arg)
+		       (./ (interval (.- (rank (shape arg)) (s 2)))
+			   (interval (.- (rank (shape arg)) (s 2))))))
+   arg))
+ 
+
 ; Auxiliary Functions
 
 (defun execute-monadic-fun (vec fun)
