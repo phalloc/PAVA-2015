@@ -779,9 +779,117 @@
   
 ; Dyadic Operators
 
-;(defun inner-product (f1 f2)
-;  (lambda (tensor1 tensor2)
-    
+(defun inner-product (f1 f2)
+  (lambda (tensor1 tensor2)
+    (inner-product-aux tensor1 tensor2 f1 f2)))
+
+(defgeneric inner-product-aux (tensor1 tensor2 f1 f2))
+
+(defmethod inner-product-aux ((tensor1 scalar) (tensor2 vec) f1 f2)
+  (let ((result (funcall f2 tensor1 (aref (vec-value tensor2) 0))))
+    (loop for i from 1 below (length (vec-value tensor2))
+	  do (setf result (funcall f1 result (funcall f2 tensor1 (aref (vec-value tensor2) i)))))
+    result))
+
+(defmethod inner-product-aux ((tensor1 scalar) (tensor2 matrix) f1 f2)
+  (let ((result (make-array (length (matrix-value tensor2))))
+	(vec nil)
+	(partial-result 0))
+    (loop for i from 0 below (length (matrix-value tensor2))
+	  do (progn (setf partial-result (funcall f2 tensor1 (aref (vec-value (aref (matrix-value tensor2) i)) 0)))
+		    (setf vec (make-array 1))
+		    (loop for j from 1 below (length (vec-value (aref (matrix-value tensor2) i)))
+			  do (setf partial-result (funcall f1 partial-result (funcall f2 tensor1 (aref (vec-value (aref (matrix-value tensor2) i)) j)))))
+		    (setf (aref vec 0) partial-result)
+		    (setf (aref result i) (make-instance 'vec :value vec))))
+    (make-instance 'matrix :value result :dimensions (list (first (matrix-dimensions tensor2)) 1))))
+
+(defmethod inner-product-aux ((tensor1 vec) (tensor2 scalar) f1 f2)
+  (let ((result (funcall f2 (aref (vec-value tensor1) 0) tensor2)))
+    (loop for i from 1 below (length (vec-value tensor1))
+	  do (setf result (funcall f1 result (funcall f2 (aref (vec-value tensor1) i) tensor2))))
+    result))
+
+(defmethod inner-product-aux ((tensor1 vec) (tensor2 vec) f1 f2)
+  (let ((result (make-array (length (vec-value tensor1))))
+	(partial-result 0))
+    (loop for i from 0 below (length (vec-value tensor1))
+	  do (progn (setf partial-result (funcall f2 (aref (vec-value tensor1) i) (aref (vec-value tensor2) 0)))
+		    (loop for j from 1 below (length (vec-value tensor2))
+			  do (setf partial-result (funcall f1 partial-result (funcall f2 (aref (vec-value tensor1) i) (aref (vec-value tensor2) j)))))
+		    (setf (aref result i) partial-result)))
+    (make-instance 'vec :value result)))
+			  
+
+(defmethod inner-product-aux ((tensor1 vec) (tensor2 matrix) f1 f2)
+  (let ((result (make-array (second (matrix-dimensions tensor2))))
+	(partial-result 0))
+    (loop for c from 0 below (second (matrix-dimensions tensor2))
+	  do (progn (setf partial-result (funcall f2 (aref (vec-value tensor1) 0)
+						  (aref (vec-value (aref (matrix-value tensor2) 0)) c)))
+		    (loop for j from 1 below (first (matrix-dimensions tensor2))
+			  do (setf partial-result (funcall f1 partial-result
+							      (funcall f2 (aref (vec-value tensor1) j)
+						                	   (aref (vec-value (aref (matrix-value tensor2) j)) c)))))
+		    (setf (aref result c) partial-result)))
+    (make-instance 'vec :value result)))
+
+(defmethod inner-product-aux ((tensor1 matrix) (tensor2 scalar) f1 f2)
+  (let ((result (make-array (length (matrix-value tensor1))))
+	(vec nil)
+	(partial-result 0))
+    (loop for i from 0 below (length (matrix-value tensor1))
+	  do (progn (setf partial-result (funcall f2 (aref (vec-value (aref (matrix-value tensor1) i)) 0) tensor2))
+		    (setf vec (make-array 1))
+		    (loop for j from 1 below (length (vec-value (aref (matrix-value tensor1) i)))
+			  do (setf partial-result (funcall f1 partial-result (funcall f2 (aref (vec-value (aref (matrix-value tensor1) i)) j) tensor2))))
+		    (setf (aref vec 0) partial-result)
+		    (setf (aref result i) (make-instance 'vec :value vec))))
+    (make-instance 'matrix :value result :dimensions (list (first (matrix-dimensions tensor1)) 1))))
+
+(defmethod inner-product-aux ((tensor1 matrix) (tensor2 vec) f1 f2)
+  (let ((result (make-array (second (matrix-dimensions tensor1))))
+	(partial-result 0))
+    (loop for c from 0 below (second (matrix-dimensions tensor1))
+	  do (progn (setf partial-result (funcall f2 (aref (vec-value (aref (matrix-value tensor1) 0)) c)
+						  (aref (vec-value tensor2) 0)))
+		    (loop for j from 1 below (first (matrix-dimensions tensor1))
+			  do (setf partial-result (funcall f1 partial-result
+							   (funcall f2 (aref (vec-value (aref (matrix-value tensor1) j)) c)
+								    (aref (vec-value tensor2) j)))))
+		    (setf (aref result c) partial-result)))
+    (make-instance 'vec :value result)))
+
+(defmethod inner-product-aux ((tensor1 matrix) (tensor2 matrix) f1 f2)
+  (let* ((lines (* (first (matrix-dimensions tensor1))
+		   (sum-special-dims (get-special-dims (matrix-dimensions tensor1)))))
+	 (result (make-array lines))
+	 (vec (make-array (second (matrix-dimensions tensor2))))
+	 (partial-result 0)
+	 (col1 1)
+	 (col2 0))
+    (loop for l from 0 below lines
+	  do (progn (loop for c from 0 below (second (matrix-dimensions tensor2))
+			  do (progn (setf partial-result (funcall f2 (aref (vec-value (aref (matrix-value tensor1) l)) 0)
+								  (aref (vec-value (aref (matrix-value tensor2) 0)) col2)))
+		    
+				    (loop for i from 1 below (first (matrix-dimensions tensor2))
+					  do (progn
+					       (setf partial-result (funcall f1 partial-result
+										     (funcall f2 (aref (vec-value (aref (matrix-value tensor1) l)) col1)
+											         (aref (vec-value (aref (matrix-value tensor2) i)) col2))))
+						    (incf col1)))
+				    (setf (aref vec c) partial-result)
+				    (setf col1 1)
+				    (incf col2)))
+		    (setf (aref result l) (make-instance 'vec :value vec))
+		    (setf vec (make-array (second (matrix-dimensions tensor2))))
+		    (setf col2 0)))
+    (make-instance 'matrix :value result :dimensions (append (list (first (matrix-dimensions tensor1))
+								   (second (matrix-dimensions tensor2)))))))
+							     
+								   
+		    
 
 ; Exercises
 
