@@ -24,8 +24,7 @@
  
 (defmethod print-object ((tens vec) stream)
   (loop for index from 0 below (length (vec-value tens)) do
-    (format stream "~A " (aref (vec-value tens) index)))
-  )
+    (format stream "~A " (aref (vec-value tens) index))))
 
 (defmethod print-object ((mat matrix) stream)
 
@@ -90,11 +89,8 @@
 	(make-instance 'scalar :value x))
 
 (defun v (&rest values)
-  (let ((result (make-instance 'vec :value (make-array (list-length values)))))
-    (loop for index from 0 below (list-length values)
-       do (setf (aref (vec-value result) index) (s (nth index values))))
-    result))
- 
+  (make-instance 'vec :value (make-array (list-length values) :initial-contents values)))
+
 
 		
 ;MONADIC FUNCTIONS
@@ -251,18 +247,18 @@
   (v (length (vec-value tensor))))
 
 (defmethod shape ((tensor matrix))
-  (let ((lst nil))
+  (let ((result (make-array (list-length (matrix-dimensions tensor)))))
     (loop for i from 0 below (list-length (matrix-dimensions tensor))
-	  do (setf lst (cons (s (nth i (matrix-dimensions tensor))) lst)))
-  (make-instance 'vec :value (make-array (list-length (matrix-dimensions tensor)) :initial-contents (reverse lst)))))
+	  do (setf (aref result i) (s (nth i (matrix-dimensions tensor)))))
+  (make-instance 'vec :value result)))
    
 ; Interval
 
 (defun interval (n)
-  (let ((lst nil))
+  (let ((result (make-array n)))
     (loop for index from 0 below n
-       do (setf lst (cons (s (+ index 1)) lst)))
-    (make-instance 'vec :value (make-array (list-length lst) :initial-contents (reverse lst)))))
+       do (setf (aref result index) (s (+ index 1))))
+    (make-instance 'vec :value result)))
 
 ; DYADIC FUNCTIONS
 
