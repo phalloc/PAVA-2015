@@ -803,13 +803,6 @@
 
 ; 4. Ravel
 
-(defun ravel (arg)
-  (reshape
-   (catenate (v 1)
-	     (catenate (tally arg)
-		       (./ (interval (.- (rank (shape arg)) (s 2)))
-			   (interval (.- (rank (shape arg)) (s 2))))))
-   arg))
  
 
 ; Auxiliary Functions
