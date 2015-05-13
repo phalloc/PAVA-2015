@@ -17,7 +17,8 @@
 ;matrix-value: (make-array (lines.nr line.dim))
 (defclass matrix(tensor)
   ((value :accessor matrix-value :initarg :value)
-   (dimensions :accessor matrix-dimensions :initarg :dimensions)))
+   (dimensions :accessor matrix-dimensions :initarg :dimensions)
+   (origin-vector :accessor matrix-origin :initarg :origin-vector)))
  
 (defmethod print-object ((tens tensor) stream)
   (print-object (tensor-value tens) stream))
@@ -233,10 +234,17 @@
                     (setf vector-build (make-array (second dims) :fill-pointer 0)))
           )
 
-        (make-instance 'matrix :value result :dimensions dims)
+        (make-instance 'matrix :value result :dimensions dims :origin-vector tensor)
 
         )
   )
+
+(defmethod reshape ((dimensions vec) (tensor matrix))
+  
+      (reshape dimensions (matrix-origin tensor))
+        
+  )
+
 
 ; Shape
 
@@ -695,11 +703,11 @@
 (defun fold (fun)
   (lambda (tensor)
     (if (eql 0 (length (vec-value tensor)))
-	(s 0)
+	      (v 0)
       (let ((result (aref (vec-value tensor) 0)))
 	(loop for index from 1 below (array-dimension (vec-value tensor) 0)
 	      do (setf result (funcall fun result (aref (vec-value tensor) index))))
-	result))))
+	(v (scalar-value result))))))
 
 (defun scan (fun)
   (lambda (tensor)
@@ -909,7 +917,11 @@
 
 ; 4. Ravel
 
- 
+(defun ravel (tensor)
+  (reshape
+        (catenate (v 1) (tally tensor))
+        tensor)
+)
 
 ; Auxiliary Functions
 
