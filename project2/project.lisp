@@ -17,8 +17,7 @@
 ;matrix-value: (make-array (lines.nr line.dim))
 (defclass matrix(tensor)
   ((value :accessor matrix-value :initarg :value)
-   (dimensions :accessor matrix-dimensions :initarg :dimensions)
-   (origin-vector :accessor matrix-origin :initarg :origin-vector)))
+   (dimensions :accessor matrix-dimensions :initarg :dimensions)))
  
 (defmethod print-object ((tens tensor) stream)
   (print-object (tensor-value tens) stream))
@@ -211,39 +210,6 @@
 
 (defmethod .not ((tensor matrix))
   (execute-monadic-fun-M tensor #'.not))
-
-; Reshape
-
-(defgeneric reshape (dimensions tensor))
-
-(defmethod reshape ((dimensions vec) (tensor vec))
-  (let* ((dims (make-list-from-vec (vec-value dimensions)))
-         (total-dims (sum-special-dims (get-special-dims dims)))
-         (vector-build (make-array (second dims) :fill-pointer 0))
-         (matrix-lines (* (first dims) total-dims))
-         (result (make-array matrix-lines))
-         (index 0))
-
-        (loop for line from 0 below matrix-lines 
-              do (progn 
-                    (loop for column from 0 below (second dims)
-                      do (progn 
-                            (vector-push (aref (vec-value tensor) index) vector-build)
-                            (setf index (mod (+ index 1) (length (vec-value tensor))))))
-                    (setf (aref result line) (make-instance 'vec :value vector-build))
-                    (setf vector-build (make-array (second dims) :fill-pointer 0)))
-          )
-
-        (make-instance 'matrix :value result :dimensions dims :origin-vector tensor)
-
-        )
-  )
-
-(defmethod reshape ((dimensions vec) (tensor matrix))
-  
-      (reshape dimensions (matrix-origin tensor))
-        
-  )
 
 
 ; Shape
@@ -617,7 +583,51 @@
     result))
 
 (defmethod drop ((tensor1 scalar) (tensor2 matrix)))
-  
+
+
+
+; Reshape
+
+(defgeneric reshape (dimensions tensor))
+
+(defmethod reshape ((dimensions vec) (tensor vec))
+  (let* ((dims (make-list-from-vec (vec-value dimensions)))
+         (total-dims (sum-special-dims (get-special-dims dims)))
+         (vector-build (make-array (second dims) :fill-pointer 0))
+         (matrix-lines (* (first dims) total-dims))
+         (result (make-array matrix-lines))
+         (index 0))
+
+        (loop for line from 0 below matrix-lines 
+              do (progn 
+                    (loop for column from 0 below (second dims)
+                      do (progn 
+                            (vector-push (aref (vec-value tensor) index) vector-build)
+                            (setf index (mod (+ index 1) (length (vec-value tensor))))))
+                    (setf (aref result line) (make-instance 'vec :value vector-build))
+                    (setf vector-build (make-array (second dims) :fill-pointer 0))))
+
+        (make-instance 'matrix :value result :dimensions dims)))
+
+(defmethod reshape ((dimensions vec) (tensor matrix))
+   (let* ((dims (make-list-from-vec (vec-value dimensions)))
+         (total-dims (sum-special-dims (get-special-dims dims)))
+         (vector-build (make-array (second dims)))
+         (matrix-lines (* (first dims) total-dims))
+         (result (make-array matrix-lines))
+         (index 0)
+	 (values (matrix-values-into-list (matrix-value tensor))))
+     
+     (loop for line from 0 below matrix-lines 
+	   do (progn 
+		(loop for column from 0 below (second dims)
+		      do (progn
+			   (setf (aref vector-build column) (nth index values))
+			   (setf index (mod (+ index 1) (length values)))))
+		(setf (aref result line) (make-instance 'vec :value vector-build))
+		(setf vector-build (make-array (second dims)))))
+     
+     (make-instance 'matrix :value result :dimensions dims)))
 
 ; Catenate (catenate)
 
@@ -1010,4 +1020,11 @@
 		       (return))))
       (setf shape nil))
     shape))
+
+(defun matrix-values-into-list (values)
+  (let ((lst nil))
+    (loop for i from 0 below (length values)
+	  do (loop for j from 0 below (length (vec-value (aref values i)))
+		   do (setf lst (append lst (list (aref (vec-value (aref values i)) j))))))
+    lst))
 		     
