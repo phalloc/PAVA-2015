@@ -789,7 +789,29 @@
 
 (defmethod outer-product-aux ((tensor1 matrix) (tensor2 vec) fun))
 
-(defmethod outer-product-aux ((tensor1 matrix) (tensor2 matrix) fun))
+(defmethod outer-product-aux ((tensor1 matrix) (tensor2 matrix) fun)
+  (let* ((new-lines (* (first (matrix-dimensions tensor2))
+		   (sum-special-dims (matrix-dimensions tensor1))))
+	 (vec (make-array (second (matrix-dimensions tensor2))))
+	 (line1 (* (first (matrix-dimensions tensor1))
+		   (sum-special-dims (get-special-dims (matrix-dimensions tensor1)))))
+	 (line2 (* (first (matrix-dimensions tensor2))
+		   (sum-special-dims (get-special-dims (matrix-dimensions tensor2)))))
+	 (value (make-array new-lines))
+	 (new-dims (append (matrix-dimensions tensor2) (matrix-dimensions tensor1)))
+	 (index 0))
+    (loop for line from 0 below line1
+	  do (loop for column from 0 below (second (matrix-dimensions tensor1))
+		   do  (loop for i from 0 below line2
+			     do (progn (loop for j from 0 below (second (matrix-dimensions tensor2))
+					     do (setf (aref vec j) (funcall fun (aref (vec-value (aref (matrix-value tensor1) line)) column)
+									    (aref (vec-value (aref (matrix-value tensor2) i)) j))))
+				       (setf (aref value index) (make-instance 'vec :value vec))
+				       (incf index)
+				       (setf vec (make-array (second (matrix-dimensions tensor2))))))))
+    (make-instance 'matrix :value value :dimensions new-dims)))
+			    
+		   
   
 
   
@@ -877,14 +899,12 @@
     (make-instance 'vec :value result)))
 
 (defmethod inner-product-aux ((tensor1 matrix) (tensor2 matrix) f1 f2)
-  (let* ((lines (* (first (matrix-dimensions tensor1))
-		   (sum-special-dims (get-special-dims (matrix-dimensions tensor1)))))
-	 (result (make-array lines))
+  (let* ((result (make-array (second (matrix-dimensions tensor1))))
 	 (vec (make-array (second (matrix-dimensions tensor2))))
 	 (partial-result 0)
 	 (col1 1)
 	 (col2 0))
-    (loop for l from 0 below lines
+    (loop for l from 0 below (second (matrix-dimensions tensor1))
 	  do (progn (loop for c from 0 below (second (matrix-dimensions tensor2))
 			  do (progn (setf partial-result (funcall f2 (aref (vec-value (aref (matrix-value tensor1) l)) 0)
 								  (aref (vec-value (aref (matrix-value tensor2) 0)) col2)))
