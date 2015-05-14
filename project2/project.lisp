@@ -800,7 +800,24 @@
 	       (setf vec (make-array (length (vec-value tensor2))))))
     (make-instance 'matrix :value result :dimensions (make-list-from-vec (vec-value (catenate (shape tensor1) (shape tensor2)))))))
 
-(defmethod outer-product-aux ((tensor1 vec) (tensor2 matrix) fun))
+(defmethod outer-product-aux ((tensor1 vec) (tensor2 matrix) fun)
+	(let ((result (make-array (* (length (vec-valu tensor1)) (first (matrix-dimensions tensor2)))))
+		  (line (make-array (second (matrix-dimensions tensor2))))
+		  (index 0))
+
+		(loop for element from 0 below (length (vec-value tensor1))
+			do (loop for i from 0 below (first (matrix-dimensions tensor2))
+				do (progn
+						(loop for j from 0 below (second (matrix-dimensions tensor2))
+							do (setf (aref line j) (funcall fun (aref (vec-value tensor1) element) (aref (vec-value (aref (matrix-value tensor2) i)) j))))
+						(setf (aref result index) (make-instance 'vec :value line))
+						(incf index)
+						(setf line (make-array (second (matrix-dimensions tensor2)))))
+				)
+			)
+		(make-instance 'matrix :value result :dimensions (make-list-from-vec (vec-value (catenate (shape tensor2) (shape tensor1)))) )
+		)
+	)
 
 (defmethod outer-product-aux ((tensor1 matrix) (tensor2 scalar) fun)
     (let ((result (make-array (length (matrix-value tensor1))))
