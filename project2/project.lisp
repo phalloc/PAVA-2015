@@ -585,6 +585,29 @@
 
 (defmethod drop ((tensor1 scalar) (tensor2 matrix)))
 
+;(defmethod drop ((tensor1 vec) (tensor2 matrix))
+ ; (let ((value (matrix-value tensor2))
+;	(lines (* (first (matrix-dimensions tensor2))
+;		  (sum-special-dims (get-special-dims (matrix-dimensions tensor2)))))
+;	(remove 0))
+ ;   (if (<= (length (vec-value tensor1))
+;	    (length (matrix-dimensions)))
+;	(progn (loop for index from (1- (length (vec-value tensor1))) to 1 by -1
+;		  do (progn (setf remove (* lines (/ (aref (vec-value tensor1) index)
+;						     (nth index (matrix-dimensions tensor2)))))
+;			    (setf lines (- lines (abs remove)))
+;			    (if (> 0 remove)
+;				(loop for i from 0 below remove
+;				   do (setf (aref value i) nil))
+;				(loop for i from (1- (length value)) to (+ (length value) remove) by -1
+;				   do (setf (aref value i) nil)))))
+;	       (if (> (length (vec-value tensor1)) 1)
+;		   (loop for index from 0 below (length value)
+;			do (not (null 
+	
+			 
+
+	
 
 
 ; Reshape
@@ -671,6 +694,7 @@
 			(setf (aref (vec-value result) i) (s 1))
 		      (setf (aref (vec-value result) i) (s 0)))))
     result))
+	
 			       
 
 ; Select (select)
