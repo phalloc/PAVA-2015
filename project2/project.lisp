@@ -969,7 +969,7 @@
 (defun execute-dyadic-fun-SM (sca m fun)
   (let ((result (make-array (length (matrix-value m)))))
     (loop for index from 0 below (length (matrix-value m))
-	  do (setf (aref result index) (execute-dyadic-funSV sca (vec-value (aref (matrix-value m) index)) fun)))
+	  do (setf (aref result index) (execute-dyadic-fun-SV sca (vec-value (aref (matrix-value m) index)) fun)))
     (make-instance 'matrix :value result :dimensions (matrix-dimensions m))))
 
 (defun execute-dyadic-fun-MS (m sca fun)
