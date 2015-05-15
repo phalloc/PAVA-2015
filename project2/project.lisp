@@ -809,7 +809,7 @@
     (make-instance 'matrix :value result :dimensions (make-list-from-vec (vec-value (catenate (shape tensor1) (shape tensor2)))))))
 
 (defmethod outer-product-aux ((tensor1 vec) (tensor2 matrix) fun)
-	(let ((result (make-array (* (length (vec-valu tensor1)) (first (matrix-dimensions tensor2)))))
+	(let ((result (make-array (* (length (vec-value tensor1)) (first (matrix-dimensions tensor2)))))
 		  (line (make-array (second (matrix-dimensions tensor2))))
 		  (index 0))
 
