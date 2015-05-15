@@ -231,7 +231,15 @@
    
 ; Interval
 
-(defun interval (n)
+(defgeneric interval (n))
+
+(defmethod interval ((n scalar))
+  (let ((result (make-array (scalar-value n))))
+    (loop for index from 0 below (scalar-value n)
+       do (setf (aref result index) (s (+ index 1))))
+    (make-instance 'vec :value result)))
+
+(defmethod interval ((n integer))
   (let ((result (make-array n)))
     (loop for index from 0 below n
        do (setf (aref result index) (s (+ index 1))))
@@ -992,8 +1000,15 @@
 (defun ravel (tensor)
   (reshape
         (catenate (v 1) (tally tensor))
-        tensor)
-)
+        tensor))
+
+; 5. Primes
+
+(defun primes (tensor)
+  (let ((number (drop (s 1) (interval tensor))))
+    (select (not (member? number (funcall (outer-product #'.*) number number)))
+	    number)
+    number))
 
 ; Auxiliary Functions
 
