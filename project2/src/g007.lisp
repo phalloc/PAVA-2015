@@ -19,12 +19,12 @@
   ((value :accessor matrix-value :initarg :value)
    (dimensions :accessor matrix-dimensions :initarg :dimensions)))
  
-(defmethod print-object ((tens tensor) stream)
-  (print-object (tensor-value tens) stream))
+(defmethod print-object ((tens scalar) stream)
+  (format stream "~D " (scalar-value tens)))
  
 (defmethod print-object ((tens vec) stream)
   (loop for index from 0 below (length (vec-value tens)) do
-    (format stream "~A " (aref (vec-value tens) index))))
+    (format stream "~D " (aref (vec-value tens) index))))
 
 (defmethod print-object ((mat matrix) stream)
 
